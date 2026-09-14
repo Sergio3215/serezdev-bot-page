@@ -1,11 +1,30 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
-import { Suspense } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
+import { Suspense, useEffect } from "react";
 
 function HomeContent() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const error = searchParams.get("error");
+
+  useEffect(() => {
+    async function checkAuth() {
+      try {
+        const res = await fetch("/api/auth/me");
+        if (res.ok) {
+          const data = await res.json();
+          if (data.authenticated && data.user) {
+            router.replace("/dashboard");
+          }
+        }
+      } catch (err) {
+        console.error("Error validando autenticación:", err);
+      }
+    }
+
+    checkAuth();
+  }, [router]);
 
   const clientId = process.env.NEXT_PUBLIC_DISCORD_CLIENTID || "1312903712238469170";
   const redirectUri = encodeURIComponent(
