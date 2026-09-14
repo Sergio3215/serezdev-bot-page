@@ -28,7 +28,7 @@ function HomeContent() {
 
   const clientId = process.env.NEXT_PUBLIC_DISCORD_CLIENTID || "1312903712238469170";
   const redirectUri = encodeURIComponent(
-    process.env.NEXT_PUBLIC_DISCORD_REDIRECT_URI || "http://localhost:3000/auth/discord"
+    process.env.NEXT_PUBLIC_DISCORD_REDIRECT_URI || "https://bot.serez.dev/auth/discord"
   );
   const discordLoginUrl = `https://discord.com/oauth2/authorize?client_id=${clientId}&response_type=code&redirect_uri=${redirectUri}&scope=identify%20guilds`;
 
