@@ -36,7 +36,7 @@ export default function NavBar({ user, displayName, handleLogout, loggingOut, ge
                     <button
                         onClick={handleLogout}
                         disabled={loggingOut}
-                        className="flex items-center gap-1.5 rounded-xl bg-red-500/10 border border-red-500/20 px-3 py-1.5 text-xs font-medium text-red-400 transition-all hover:bg-red-500 hover:text-white disabled:opacity-50"
+                        className="flex items-center gap-1.5 rounded-xl bg-red-500/10 border border-red-500/20 px-3 py-1.5 text-xs font-medium text-red-400 transition-all hover:bg-red-500 hover:text-white disabled:opacity-50 cursor-pointer"
                     >
                         <span>{loggingOut ? "Saliendo..." : "Cerrar Sesión"}</span>
                     </button>
