@@ -1,17 +1,12 @@
 "use client"
 
-import { DiscordGuild, serverSelect } from "@/types/DiscordTypes";
-import { useEffect, useState } from "react";
+import { serverSelect } from "@/types/DiscordTypes";
+import { useParams } from "next/navigation";
+import { useState } from "react";
 
 export default function ServerDashboard({ filteredGuilds }: serverSelect) {
-
-    const [idServer, setIdServer] = useState("");
-    const [guild, setGuild] = useState<DiscordGuild>();
-
-    useEffect(() => {
-        const idS = window.location.pathname.split('/')[2];
-        setIdServer(idS)
-    }, [])
+    const params = useParams();
+    const idServer = (params?.server as string) || "";
 
     const [isResetting, setIsResetting] = useState(false);
     const [statusMessage, setStatusMessage] = useState<{ text: string; isError: boolean } | null>(null);

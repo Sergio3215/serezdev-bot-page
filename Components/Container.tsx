@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import NavBar from "@/Components/NavBar";
 import DashboardComponent from "@/Components/DashboardComponent";
@@ -22,7 +21,7 @@ export default function Container({ children, site }: ContainerProps) {
 
     const [botGuilds, setBotGuilds] = useState<DiscordGuild[]>([]);
     const [otherAdminGuilds, setOtherAdminGuilds] = useState<DiscordGuild[]>([]);
-    const [activeTab, setActiveTab] = useState<"withBot" | "all">("withBot");
+    const [activeTab] = useState<"withBot" | "all">("withBot");
     const [searchQuery, setSearchQuery] = useState("");
     const [loggingOut, setLoggingOut] = useState(false);
 
