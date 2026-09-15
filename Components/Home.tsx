@@ -26,9 +26,14 @@ function HomeContent() {
     checkAuth();
   }, [router]);
 
+  let urlRe = "https://bot.serez.dev/auth/discord";
+  if (process.env.NEXT_PUBLIC_DEV == "True") {
+    urlRe = "http://localhost:3000/auth/discord";
+  }
+
   const clientId = process.env.NEXT_PUBLIC_DISCORD_CLIENTID || "1312903712238469170";
   const redirectUri = encodeURIComponent(
-    process.env.NEXT_PUBLIC_DISCORD_REDIRECT_URI || "https://bot.serez.dev/auth/discord"
+    process.env.NEXT_PUBLIC_DISCORD_REDIRECT_URI || urlRe
   );
   const discordLoginUrl = `https://discord.com/oauth2/authorize?client_id=${clientId}&response_type=code&redirect_uri=${redirectUri}&scope=identify%20guilds`;
 
