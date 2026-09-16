@@ -8,10 +8,8 @@ import DashboardComponent from "@/Components/DashboardComponent";
 import { DiscordGuild, DiscordUser } from "../types/DiscordTypes";
 import ServerDashboard from "./ServerDashboard";
 
-interface ContainerProps {
-    children?: React.ReactNode;
-    site?: string;
-}
+import { ContainerProps } from "../types/Elements"
+
 
 export default function Container({ children, site }: ContainerProps) {
     const router = useRouter();
