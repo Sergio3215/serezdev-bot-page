@@ -96,8 +96,9 @@ export default function GifButtons({ gifsItem, gifsArray, index }: gifButtons) {
             }
 
             setEdit(false);
-        } catch (err: any) {
-            setErrorMsg(err.message || "Error al actualizar la URL.");
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : "Error al actualizar la URL.";
+            setErrorMsg(message);
         } finally {
             setIsLoading(false);
         }
@@ -126,7 +127,7 @@ export default function GifButtons({ gifsItem, gifsArray, index }: gifButtons) {
 
             // Eliminar del array en memoria si existe
             if (gifsArray && Array.isArray(gifsArray.gifs)) {
-                const itemIndex = gifsArray.gifs.findIndex((g: any) => g.id === idItem);
+                const itemIndex = gifsArray.gifs.findIndex((g: { id?: string }) => g.id === idItem);
                 if (itemIndex !== -1) {
                     gifsArray.gifs.splice(itemIndex, 1);
                 }
@@ -148,8 +149,9 @@ export default function GifButtons({ gifsItem, gifsArray, index }: gifButtons) {
 
             setDeleteItem(false);
             setIsDeleted(true);
-        } catch (err: any) {
-            setErrorMsg(err.message || "Error al eliminar el GIF.");
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : "Error al eliminar el GIF.";
+            setErrorMsg(message);
         } finally {
             setIsLoading(false);
         }
@@ -220,6 +222,7 @@ export default function GifButtons({ gifsItem, gifsArray, index }: gifButtons) {
                             {/* Previsualización del GIF */}
                             <div className="flex flex-col items-center justify-center bg-[#111214] border border-white/10 rounded-xl p-3 min-h-[140px]">
                                 {url ? (
+                                    /* eslint-disable-next-line @next/next/no-img-element */
                                     <img
                                         src={url}
                                         alt="Vista previa"
@@ -324,6 +327,7 @@ export default function GifButtons({ gifsItem, gifsArray, index }: gifButtons) {
 
                             {/* Previsualización del GIF a borrar */}
                             <div className="flex flex-col items-center justify-center bg-[#111214] border border-white/10 rounded-xl p-3">
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
                                 <img
                                     src={gifsItem.url}
                                     alt="GIF a eliminar"

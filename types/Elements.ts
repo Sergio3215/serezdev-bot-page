@@ -48,6 +48,7 @@ export interface addGifsType {
     idServer: string;
     interactions: InteractionName[];
     goBack: any;
+    defaultInteraction?: string;
 }
 
 export interface gifButtons {
