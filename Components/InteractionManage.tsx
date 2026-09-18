@@ -2,7 +2,7 @@
 
 import { InteractionDataType, interactionManage, InteractionName } from "@/types/Elements";
 import { useParams } from "next/navigation";
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback } from "react";
 import AddGifs from "./AddGifs";
 import GifButtons from "./GifsButtons";
 
@@ -15,45 +15,44 @@ export default function InteractionManage({ newFlag, setNewFlag }: interactionMa
     const [gifsItems, setGifsItems] = useState<InteractionDataType[]>();
     const [selectedInteraction, setSelectedInteraction] = useState<string>();
 
-    const getCategory = async () => {
-        const ftch = await fetch("https://server-serez-dev-bot-production.up.railway.app/api/v1/getInteractions");
-
-        const res = await ftch.json();
-
-        setInteractions(res.data);
-        if (res.data && res.data.length > 0) {
-            setSelectedInteraction(res.data[0].name);
-        }
-    }
-
-    const getGifs = async () => {
-        if (!selectedInteraction) return;
-        const ftch = await fetch(`https://server-serez-dev-bot-production.up.railway.app/api/v1/getInteractionByName?name=${selectedInteraction}&serverId=${idServer}`);
-
-        const res = await ftch.json();
-
-        setGifsItems(res.data);
-    }
-
     useEffect(() => {
-        getCategory();
+        let isCancelled = false;
+        fetch("https://server-serez-dev-bot-production.up.railway.app/api/v1/getInteractions")
+            .then(res => res.json())
+            .then(res => {
+                if (!isCancelled) {
+                    setInteractions(res.data);
+                    if (res.data && res.data.length > 0) {
+                        setSelectedInteraction(prev => prev || res.data[0].name);
+                    }
+                }
+            })
+            .catch(console.error);
+
+        return () => {
+            isCancelled = true;
+        };
     }, []);
 
-    useEffect(() => {
-        if (selectedInteraction) {
-            getGifs();
-        }
+    const getGifs = useCallback(() => {
+        if (!selectedInteraction) return;
+        fetch(`https://server-serez-dev-bot-production.up.railway.app/api/v1/getInteractionByName?name=${selectedInteraction}&serverId=${idServer}`)
+            .then(res => res.json())
+            .then(res => {
+                setGifsItems(res.data);
+            })
+            .catch(console.error);
     }, [selectedInteraction, idServer]);
 
     useEffect(() => {
-        if (!newFlag) {
+        if (selectedInteraction && !newFlag) {
             getGifs();
         }
-    }, [newFlag])
+    }, [selectedInteraction, newFlag, getGifs]);
 
     const goBack = () => {
         setNewFlag(false);
-    }
+    };
 
 
     return (
