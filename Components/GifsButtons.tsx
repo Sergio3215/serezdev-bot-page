@@ -4,13 +4,14 @@ import { gifButtons } from "@/types/Elements";
 import ButtonDanger from "./ButtonDanger";
 import ButtonDiscord from "./ButtonDiscord";
 import { useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 
 export default function GifButtons({ gifsItem, gifsArray, index }: gifButtons) {
     const [edit, setEdit] = useState(false);
     const [deleteItem, setDeleteItem] = useState(false);
 
     const [id, setId] = useState("");
-    const [url, setUrl] = useState("");
+    const [url, setUrl] = useState(gifsItem.url || "");
     const [errorMsg, setErrorMsg] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const [isDeleted, setIsDeleted] = useState(false);
@@ -85,7 +86,7 @@ export default function GifButtons({ gifsItem, gifsArray, index }: gifButtons) {
 
             await ftch.text();
 
-            // Actualizar el objeto gifsItem en memoria
+            // Actualizar el estado local
             setUrl(trimmedUrl);
 
             // Actualizar la imagen directamente en el DOM para reflejar el cambio en pantalla
@@ -167,7 +168,7 @@ export default function GifButtons({ gifsItem, gifsArray, index }: gifButtons) {
         <div ref={containerRef}>
             {
                 !gifsItem.url.includes("git") && (
-                    <div className="flex flex-row gap-2" key={index}>
+                    <div className="flex flex-row gap-2">
                         <ButtonDiscord
                             title="Editar"
                             onClick={() => {
@@ -193,11 +194,11 @@ export default function GifButtons({ gifsItem, gifsArray, index }: gifButtons) {
                 )
             }
 
-            {/* Modal de Edición de URL */}
+            {/* Modal de Edición de URL renderizado en el body para evitar recorte por transformaciones del padre */}
             {
-                edit && (
+                typeof document !== "undefined" && edit && createPortal(
                     <div
-                        className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4 transition-all"
+                        className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 transition-all"
                         onClick={(e) => {
                             if (e.target === e.currentTarget) {
                                 setEdit(false);
@@ -205,10 +206,22 @@ export default function GifButtons({ gifsItem, gifsArray, index }: gifButtons) {
                             }
                         }}
                     >
-                        <div className="bg-[#1e1f22] border border-white/10 rounded-2xl p-6 w-full max-w-md shadow-2xl text-white space-y-4">
-                            <div className="flex justify-between items-center pb-2 border-b border-white/10">
-                                <h3 className="text-lg font-bold tracking-tight">Editar GIF #{gifsItem.order}</h3>
+                        <div className="bg-[#1e1f22] border border-white/10 rounded-2xl p-6 sm:p-7 w-full max-w-lg shadow-2xl text-white space-y-5 animate-in fade-in zoom-in-95 duration-150">
+                            {/* Cabecera */}
+                            <div className="flex justify-between items-center pb-3 border-b border-white/10">
+                                <div className="flex items-center gap-2.5">
+                                    <div className="p-2 rounded-xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <h3 className="text-lg font-bold tracking-tight text-white">Editar GIF #{gifsItem.order}</h3>
+                                        <p className="text-xs text-zinc-400">Actualiza la URL del GIF</p>
+                                    </div>
+                                </div>
                                 <button
+                                    type="button"
                                     className="text-zinc-400 hover:text-white text-xl font-bold px-2 py-1 cursor-pointer transition-colors"
                                     onClick={() => {
                                         setEdit(false);
@@ -220,13 +233,13 @@ export default function GifButtons({ gifsItem, gifsArray, index }: gifButtons) {
                             </div>
 
                             {/* Previsualización del GIF */}
-                            <div className="flex flex-col items-center justify-center bg-[#111214] border border-white/10 rounded-xl p-3 min-h-[140px]">
+                            <div className="flex flex-col items-center justify-center bg-[#111214] border border-white/10 rounded-xl p-3 min-h-[160px]">
                                 {url ? (
                                     /* eslint-disable-next-line @next/next/no-img-element */
                                     <img
                                         src={url}
                                         alt="Vista previa"
-                                        className="max-h-36 max-w-full rounded-lg object-contain"
+                                        className="max-h-44 max-w-full rounded-lg object-contain"
                                         onError={(e) => {
                                             (e.target as HTMLElement).style.display = "none";
                                         }}
@@ -239,8 +252,11 @@ export default function GifButtons({ gifsItem, gifsArray, index }: gifButtons) {
                                 )}
                             </div>
 
+                            {/* Campo de URL */}
                             <div className="space-y-1.5">
-                                <label className="text-xs font-semibold text-zinc-300">Nueva URL del GIF</label>
+                                <label className="text-xs font-semibold text-zinc-300">
+                                    Nueva URL del GIF <span className="text-red-400">*</span>
+                                </label>
                                 <input
                                     type="text"
                                     value={url}
@@ -260,6 +276,7 @@ export default function GifButtons({ gifsItem, gifsArray, index }: gifButtons) {
                                 </div>
                             )}
 
+                            {/* Acciones */}
                             <div className="flex justify-end gap-3 pt-3 border-t border-white/10">
                                 <button
                                     type="button"
@@ -268,7 +285,7 @@ export default function GifButtons({ gifsItem, gifsArray, index }: gifButtons) {
                                         setEdit(false);
                                         setErrorMsg("");
                                     }}
-                                    className="px-4 py-2 rounded-xl text-xs font-semibold bg-white/10 hover:bg-white/20 text-zinc-200 transition-colors cursor-pointer disabled:opacity-50"
+                                    className="px-4 py-2.5 rounded-xl text-xs font-semibold bg-white/10 hover:bg-white/20 text-zinc-200 transition-colors cursor-pointer disabled:opacity-50"
                                 >
                                     Cancelar
                                 </button>
@@ -276,7 +293,7 @@ export default function GifButtons({ gifsItem, gifsArray, index }: gifButtons) {
                                     type="button"
                                     disabled={isLoading}
                                     onClick={() => handlerEdit(id || gifsItem.id, url)}
-                                    className="px-5 py-2 rounded-xl text-xs font-semibold bg-[#5865F2] hover:bg-[#4752c4] text-white shadow-lg shadow-[#5865F2]/25 transition-all cursor-pointer disabled:opacity-50 flex items-center gap-2"
+                                    className="px-5 py-2.5 rounded-xl text-xs font-semibold bg-[#5865F2] hover:bg-[#4752c4] text-white shadow-lg shadow-[#5865F2]/25 transition-all cursor-pointer disabled:opacity-50 flex items-center gap-2"
                                 >
                                     {isLoading ? (
                                         <>
@@ -289,15 +306,16 @@ export default function GifButtons({ gifsItem, gifsArray, index }: gifButtons) {
                                 </button>
                             </div>
                         </div>
-                    </div>
+                    </div>,
+                    document.body
                 )
             }
 
-            {/* Modal de Confirmación de Borrado */}
+            {/* Modal de Confirmación de Borrado renderizado en el body */}
             {
-                deleteItem && (
+                typeof document !== "undefined" && deleteItem && createPortal(
                     <div
-                        className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4 transition-all"
+                        className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 transition-all"
                         onClick={(e) => {
                             if (e.target === e.currentTarget) {
                                 setDeleteItem(false);
@@ -305,12 +323,22 @@ export default function GifButtons({ gifsItem, gifsArray, index }: gifButtons) {
                             }
                         }}
                     >
-                        <div className="bg-[#1e1f22] border border-red-500/30 rounded-2xl p-6 w-full max-w-md shadow-2xl text-white space-y-4">
-                            <div className="flex justify-between items-center pb-2 border-b border-white/10">
-                                <h3 className="text-lg font-bold tracking-tight text-red-400 flex items-center gap-2">
-                                    <span>Eliminar GIF #{gifsItem.order}</span>
-                                </h3>
+                        <div className="bg-[#1e1f22] border border-red-500/30 rounded-2xl p-6 sm:p-7 w-full max-w-md shadow-2xl text-white space-y-5 animate-in fade-in zoom-in-95 duration-150">
+                            {/* Cabecera */}
+                            <div className="flex justify-between items-center pb-3 border-b border-white/10">
+                                <div className="flex items-center gap-2.5">
+                                    <div className="p-2 rounded-xl bg-red-500/10 text-red-400 border border-red-500/20">
+                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <h3 className="text-lg font-bold tracking-tight text-white">Eliminar GIF #{gifsItem.order}</h3>
+                                        <p className="text-xs text-red-400/80">Esta acción no se puede deshacer</p>
+                                    </div>
+                                </div>
                                 <button
+                                    type="button"
                                     className="text-zinc-400 hover:text-white text-xl font-bold px-2 py-1 cursor-pointer transition-colors"
                                     onClick={() => {
                                         setDeleteItem(false);
@@ -322,16 +350,16 @@ export default function GifButtons({ gifsItem, gifsArray, index }: gifButtons) {
                             </div>
 
                             <p className="text-sm text-zinc-300">
-                                ¿Estás seguro de que deseas eliminar este GIF? Esta acción eliminará el elemento de forma permanente.
+                                ¿Estás seguro de que deseas eliminar permanentemente este GIF? Esta acción lo removerá de la interacción.
                             </p>
 
                             {/* Previsualización del GIF a borrar */}
-                            <div className="flex flex-col items-center justify-center bg-[#111214] border border-white/10 rounded-xl p-3">
+                            <div className="flex flex-col items-center justify-center bg-[#111214] border border-white/10 rounded-xl p-3 min-h-[140px]">
                                 {/* eslint-disable-next-line @next/next/no-img-element */}
                                 <img
                                     src={gifsItem.url}
                                     alt="GIF a eliminar"
-                                    className="max-h-32 max-w-full rounded-lg object-contain"
+                                    className="max-h-36 max-w-full rounded-lg object-contain"
                                 />
                             </div>
 
@@ -341,6 +369,7 @@ export default function GifButtons({ gifsItem, gifsArray, index }: gifButtons) {
                                 </div>
                             )}
 
+                            {/* Acciones */}
                             <div className="flex justify-end gap-3 pt-3 border-t border-white/10">
                                 <button
                                     type="button"
@@ -349,15 +378,15 @@ export default function GifButtons({ gifsItem, gifsArray, index }: gifButtons) {
                                         setDeleteItem(false);
                                         setErrorMsg("");
                                     }}
-                                    className="px-4 py-2 rounded-xl text-xs font-semibold bg-white/10 hover:bg-white/20 text-zinc-200 transition-colors cursor-pointer disabled:opacity-50"
+                                    className="px-4 py-2.5 rounded-xl text-xs font-semibold bg-white/10 hover:bg-white/20 text-zinc-200 transition-colors cursor-pointer disabled:opacity-50"
                                 >
                                     Cancelar
                                 </button>
                                 <button
                                     type="button"
                                     disabled={isLoading}
-                                    onClick={() => handlerDelete(id)}
-                                    className="px-5 py-2 rounded-xl text-xs font-semibold bg-[#6e0a0a] hover:bg-[#bd2e2e] text-white shadow-lg shadow-[#6e0a0a]/25 transition-all cursor-pointer disabled:opacity-50 flex items-center gap-2"
+                                    onClick={() => handlerDelete(id || gifsItem.id)}
+                                    className="px-5 py-2.5 rounded-xl text-xs font-semibold bg-[#6e0a0a] hover:bg-[#bd2e2e] text-white shadow-lg shadow-[#6e0a0a]/25 transition-all cursor-pointer disabled:opacity-50 flex items-center gap-2"
                                 >
                                     {isLoading ? (
                                         <>
@@ -370,7 +399,8 @@ export default function GifButtons({ gifsItem, gifsArray, index }: gifButtons) {
                                 </button>
                             </div>
                         </div>
-                    </div>
+                    </div>,
+                    document.body
                 )
             }
         </div>
