@@ -1,3 +1,4 @@
+import React from "react";
 
 export interface SectionsType {
     title: string;
@@ -11,7 +12,7 @@ export interface ContainerProps {
 
 export interface ManageSettingType {
     state: string;
-    setState: any;
+    setState: (value: string) => void;
     title: string;
 }
 
@@ -36,23 +37,23 @@ export interface InteractionName {
 
 export interface ButtonDiscordType {
     title: string;
-    onClick: any;
+    onClick: (e?: React.MouseEvent<HTMLButtonElement>) => void;
 }
 
 export interface interactionManage {
-    newFlag: Boolean;
-    setNewFlag: any;
+    newFlag: boolean;
+    setNewFlag: (value: boolean) => void;
 }
 
 export interface addGifsType {
     idServer: string;
     interactions: InteractionName[];
-    goBack: any;
+    goBack: () => void;
     defaultInteraction?: string;
 }
 
 export interface gifButtons {
-    gifsItem: any;
-    gifsArray: any;
+    gifsItem: GifDataType;
+    gifsArray: InteractionDataType;
     index: number;
 }

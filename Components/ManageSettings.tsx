@@ -2,15 +2,10 @@
 import { ManageSettingType } from "@/types/Elements";
 import InteractionManage from "./InteractionManage";
 import ButtonDiscord from "./ButtonDiscord";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 export default function ManageSetting({ title, state, setState }: ManageSettingType) {
-
-    const [newFlag, setNewFlag] = useState<Boolean>(false);
-
-    useEffect(() => {
-
-    }, [newFlag])
+    const [newFlag, setNewFlag] = useState<boolean>(false);
 
     return (
         <>
@@ -19,7 +14,7 @@ export default function ManageSetting({ title, state, setState }: ManageSettingT
                 <h1 className="text-3xl font-bold">{title}</h1>
                 <div>
                     {
-                        state == "gif" && !newFlag && (
+                        state === "gif" && !newFlag && (
                             <ButtonDiscord title="+ Nuevo" onClick={() => {
                                 setNewFlag(true);
                             }} />
@@ -29,7 +24,7 @@ export default function ManageSetting({ title, state, setState }: ManageSettingT
             </div>
             <div>
                 {
-                    state == "gif" && (
+                    state === "gif" && (
                         <>
                             <InteractionManage newFlag={newFlag} setNewFlag={setNewFlag} />
                         </>

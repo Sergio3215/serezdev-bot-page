@@ -2,7 +2,8 @@
 
 import { serverSelect } from "@/types/DiscordTypes";
 import { useParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useState } from "react";
 import Section from "./Section";
 import ManageSetting from "./ManageSettings";
 import ButtonDiscord from "./ButtonDiscord";
@@ -16,10 +17,6 @@ export default function ServerDashboard({ filteredGuilds }: serverSelect) {
 
     const [state, setState] = useState("");
     const [title, setTitle] = useState("");
-
-    useEffect(() => {
-
-    }, [state])
 
     const resetBot = async () => {
         setIsResetting(true);
@@ -51,7 +48,7 @@ export default function ServerDashboard({ filteredGuilds }: serverSelect) {
                     <div>
                         {
                             state == "" && (
-                                <a href="/dashboard" className="cursor-pointer hover:underline underline-offset-4 relative bottom-3.5"> &larr; Atras</a>
+                                <Link href="/dashboard" className="cursor-pointer hover:underline underline-offset-4 relative bottom-3.5"> &larr; Atras</Link>
                             )
                         }
                         {filteredGuilds.map((ser) => {
