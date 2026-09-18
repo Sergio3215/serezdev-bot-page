@@ -6,6 +6,7 @@ import { useEffect, useState } from "react"
 import ButtonDiscord from "./ButtonDiscord";
 import ButtonDanger from "./ButtonDanger";
 import AddGifs from "./AddGifs";
+import GifButtons from "./GifsButtons";
 
 
 export default function InteractionManage({ newFlag, setNewFlag }: interactionManage) {
@@ -93,27 +94,15 @@ export default function InteractionManage({ newFlag, setNewFlag }: interactionMa
                                                         return (
                                                             <div className="m-5">
                                                                 <div className="text-center">{gg.order}</div>
-                                                                <div className="border-2 border-b-gray-400 rounded-xl flex flex-col justify-center items-center w-fit h-30 overflow-hidden">
+                                                                <div className="border-2 border-b-gray-400 rounded-xl flex flex-col justify-center items-center w-fit h-30 overflow-hidden mb-5">
                                                                     <div>
                                                                         <img width={150} src={gg.url} />
                                                                     </div>
                                                                 </div>
-                                                                {
-                                                                    !gg.url.includes("git") && (
-                                                                        <div className="flex flex-row gap-2">
-                                                                            <ButtonDiscord title="Editar" onClick={() => {
-
-                                                                            }} />
-                                                                            {
-                                                                                g.gifs.length == index + 1 && (
-                                                                                    <ButtonDanger title="Borrar" onClick={() => {
-
-                                                                                    }} />
-                                                                                )
-                                                                            }
-                                                                        </div>
-                                                                    )
-                                                                }
+                                                                <GifButtons
+                                                                    gifsItem={gg}
+                                                                    gifsArray={g}
+                                                                    index={index} />
                                                             </div>
                                                         )
                                                     })
@@ -127,7 +116,6 @@ export default function InteractionManage({ newFlag, setNewFlag }: interactionMa
                     </>
                 )
             }
-
             {
                 newFlag && (
                     <AddGifs interactions={interactions || []} idServer={idServer} goBack={goBack} />

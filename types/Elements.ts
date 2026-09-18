@@ -49,3 +49,9 @@ export interface addGifsType {
     interactions: InteractionName[];
     goBack: any;
 }
+
+export interface gifButtons {
+    gifsItem: any;
+    gifsArray: any;
+    index: number;
+}
