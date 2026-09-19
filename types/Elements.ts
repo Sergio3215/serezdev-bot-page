@@ -65,3 +65,9 @@ export interface birthdayType {
     channelId: string;
     message: string;
 }
+
+export interface joinServerType {
+    id: string;
+    serverId: string;
+    setRole: string;
+}

@@ -87,6 +87,12 @@ export default function ServerDashboard({ filteredGuilds }: serverSelect) {
                                                             comprobateBirthdaySetup();
                                                         }} title={`Administrar Recordatorio &rarr;`} />
                                                     </Section>
+                                                    <Section title="Bienvenida al Servidor">
+                                                        <ButtonDiscord onClick={() => {
+                                                            setState("joinServer");
+                                                            setTitle("Administrá la Bienvenida")
+                                                        }} title={`Administrar Bienvenida &rarr;`} />
+                                                    </Section>
                                                     <Section title="Administración de Interacciones">
                                                         <ButtonDiscord onClick={() => {
                                                             setState("gif");
