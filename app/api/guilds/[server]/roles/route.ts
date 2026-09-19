@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { checkGuildAdmin } from "@/lib/guildAccess";
 
 interface DiscordApiRole {
   id: string;
@@ -7,9 +8,6 @@ interface DiscordApiRole {
   position: number;
   managed: boolean;
 }
-
-const ADMINISTRATOR = BigInt(0x8);
-const MANAGE_GUILD = BigInt(0x20);
 
 export async function GET(
   request: NextRequest,
@@ -32,65 +30,31 @@ export async function GET(
 
   try {
     // 1. Verificar que quien pide sea administrador de ESE servidor
-    const userGuildsRes = await fetch("https://discord.com/api/users/@me/guilds", {
-      headers: { Authorization: `Bearer ${tokenCookie.value}` },
-      cache: "no-store",
-    });
+    const access = await checkGuildAdmin(tokenCookie.value, guildId);
 
-    if (!userGuildsRes.ok) {
-      const detail = await userGuildsRes.text().catch(() => "");
-      console.error(
-        `[roles] /users/@me/guilds respondió ${userGuildsRes.status}:`,
-        detail
-      );
-
-      if (userGuildsRes.status === 429) {
-        const retryAfter = userGuildsRes.headers.get("retry-after");
-        return NextResponse.json(
-          {
-            error: `Discord limitó las peticiones. Probá de nuevo en ${retryAfter || "unos"} segundos.`,
-          },
-          { status: 429 }
-        );
-      }
-
+    if (access.status === "unauthenticated") {
       return NextResponse.json(
-        {
-          error:
-            userGuildsRes.status === 401
-              ? "Tu sesión de Discord expiró. Volvé a iniciar sesión."
-              : `No se pudieron verificar tus permisos (Discord respondió ${userGuildsRes.status}).`,
-          needsReauth: userGuildsRes.status === 401,
-        },
-        { status: userGuildsRes.status }
+        { error: "Tu sesión de Discord expiró. Volvé a iniciar sesión.", needsReauth: true },
+        { status: 401 }
       );
     }
 
-    const userGuilds: Array<{ id: string; owner: boolean; permissions: string }> =
-      await userGuildsRes.json();
-
-    const target = userGuilds.find((g) => g.id === guildId);
-
-    let isAdmin = false;
-    if (target) {
-      if (target.owner) {
-        isAdmin = true;
-      } else {
-        try {
-          const perms = BigInt(target.permissions);
-          isAdmin =
-            (perms & ADMINISTRATOR) === ADMINISTRATOR ||
-            (perms & MANAGE_GUILD) === MANAGE_GUILD;
-        } catch {
-          isAdmin = false;
-        }
-      }
-    }
-
-    if (!isAdmin) {
+    if (access.status === "denied") {
       return NextResponse.json(
         { error: "No administrás este servidor" },
         { status: 403 }
+      );
+    }
+
+    if (access.status === "unknown") {
+      return NextResponse.json(
+        {
+          error:
+            access.httpStatus === 429
+              ? "Discord limitó las peticiones. Probá de nuevo en unos segundos."
+              : `No se pudieron verificar tus permisos (Discord respondió ${access.httpStatus}).`,
+        },
+        { status: access.httpStatus === 429 ? 429 : 502 }
       );
     }
 
