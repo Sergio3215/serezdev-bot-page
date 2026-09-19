@@ -69,7 +69,7 @@ export default function GifButtons({ gifsItem, gifsArray, index }: gifButtons) {
         setErrorMsg("");
 
         try {
-            const ftch = await fetch("https://server-serez-dev-bot-production.up.railway.app/api/v1/editGif", {
+            const ftch = await fetch("https://server-serez-dev-bot-production.up.railway.app/api/v1/gif/editGif", {
                 method: "put",
                 headers: {
                     "Content-Type": "application/json"
@@ -110,7 +110,7 @@ export default function GifButtons({ gifsItem, gifsArray, index }: gifButtons) {
         setErrorMsg("");
 
         try {
-            const ftch = await fetch("https://server-serez-dev-bot-production.up.railway.app/api/v1/deleteGif", {
+            const ftch = await fetch("https://server-serez-dev-bot-production.up.railway.app/api/v1/gif/deleteGif", {
                 method: "delete",
                 headers: {
                     "Content-Type": "application/json"

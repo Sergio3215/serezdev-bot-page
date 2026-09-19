@@ -3,6 +3,7 @@ import { ManageSettingType } from "@/types/Elements";
 import InteractionManage from "./InteractionManage";
 import ButtonDiscord from "./ButtonDiscord";
 import { useState } from "react";
+import BirthdaySetup from "./BirthdaySetup";
 
 export default function ManageSetting({ title, state, setState }: ManageSettingType) {
     const [newFlag, setNewFlag] = useState<boolean>(false);
@@ -27,6 +28,13 @@ export default function ManageSetting({ title, state, setState }: ManageSettingT
                     state === "gif" && (
                         <>
                             <InteractionManage newFlag={newFlag} setNewFlag={setNewFlag} />
+                        </>
+                    )
+                }
+                {
+                    state === "birthday" && (
+                        <>
+                            <BirthdaySetup />
                         </>
                     )
                 }

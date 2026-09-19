@@ -57,3 +57,11 @@ export interface gifButtons {
     gifsArray: InteractionDataType;
     index: number;
 }
+
+export interface birthdayType {
+    id: string
+    serverId: string
+    serverName: string;
+    channelId: string;
+    message: string;
+}
