@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { LayerHit, SelectionTarget, welcomeCanvasType } from "@/types/WelcomeCard";
-import { drawWelcomeCard } from "@/lib/welcomeCard";
+import { drawWelcomeCard, FONT_OPTIONS } from "@/lib/welcomeCard";
 
 /** Distancia en px del lienzo a la que un elemento se pega al centro. */
 const SNAP = 8;
@@ -31,6 +31,32 @@ export default function WelcomeCardCanvas({
 
     const [guides, setGuides] = useState({ vertical: false, horizontal: false });
 
+    // El canvas dibuja con la fuente que haya en ese instante: si Ubuntu todavía no
+    // bajó, el primer trazo sale con la de reserva y la vista previa miente. Al
+    // terminar de cargar, este flag fuerza un redibujado.
+    const [fuentesListas, setFuentesListas] = useState(false);
+
+    useEffect(() => {
+        if (typeof document === "undefined" || !document.fonts) return;
+
+        let cancelled = false;
+
+        const cargas = FONT_OPTIONS.flatMap((opcion) => {
+            const familia = opcion.value.split(",")[0].trim();
+            return ["400", "700", "italic 400", "italic 700"].map((estilo) =>
+                document.fonts.load(`${estilo} 40px ${familia}`).catch(() => null)
+            );
+        });
+
+        Promise.all(cargas).then(() => {
+            if (!cancelled) setFuentesListas(true);
+        });
+
+        return () => {
+            cancelled = true;
+        };
+    }, []);
+
     const { width, height } = config.canvas;
 
     // Redibuja ante cualquier cambio de config, datos de prueba, imágenes o selección.
@@ -47,7 +73,7 @@ export default function WelcomeCardCanvas({
 
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
         hitsRef.current = drawWelcomeCard(ctx, config, sample, images, { selection, guides });
-    }, [config, sample, images, selection, guides, width, height, canvasRef]);
+    }, [config, sample, images, selection, guides, width, height, canvasRef, fuentesListas]);
 
     /** Coordenadas del puntero convertidas al sistema del lienzo. */
     const toCanvasPoint = (e: React.PointerEvent<HTMLCanvasElement>) => {

@@ -1,5 +1,47 @@
 @import "tailwindcss";
 
+/*
+ * Ubuntu la ofrece el editor de bienvenida.
+ *
+ * Va auto-hospedada y no con next/font porque el nombre de la familia tiene que
+ * ser literalmente "Ubuntu": es lo que se guarda en el diseño y lo que el bot
+ * registra al dibujar la imagen. next/font le pondría un nombre con hash y la
+ * vista previa dejaría de coincidir con lo que publica el bot.
+ *
+ * Los mismos cuatro archivos están en static/fonts del bot.
+ */
+@font-face {
+  font-family: "Ubuntu";
+  src: url("/fonts/Ubuntu-400.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Ubuntu";
+  src: url("/fonts/Ubuntu-700.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Ubuntu";
+  src: url("/fonts/Ubuntu-400Italic.ttf") format("truetype");
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Ubuntu";
+  src: url("/fonts/Ubuntu-700Italic.ttf") format("truetype");
+  font-weight: 700;
+  font-style: italic;
+  font-display: swap;
+}
+
 :root {
   --background: #ffffff;
   --foreground: #171717;

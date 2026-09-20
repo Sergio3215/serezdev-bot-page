@@ -30,6 +30,7 @@ export const CANVAS_PRESETS = [
  */
 export const FONT_OPTIONS = [
     { label: "Arial", value: "Arial, Helvetica, sans-serif" },
+    { label: "Ubuntu", value: "Ubuntu, sans-serif" },
     { label: "Verdana", value: "Verdana, Geneva, sans-serif" },
     { label: "Trebuchet MS", value: "'Trebuchet MS', sans-serif" },
     { label: "Georgia", value: "Georgia, serif" },
@@ -543,8 +544,8 @@ export function drawWelcomeCard(
             layer.align === "center"
                 ? layer.x - widest / 2
                 : layer.align === "right"
-                  ? layer.x - widest
-                  : layer.x;
+                    ? layer.x - widest
+                    : layer.x;
 
         hits.push({
             target: { kind: "text", id: layer.id },
@@ -639,32 +640,32 @@ export function normalizeConfig(raw: unknown): WelcomeCardConfig {
 
     const texts = Array.isArray(input.texts)
         ? input.texts.slice(0, 12).map((item) => {
-              const t = (item ?? {}) as Record<string, unknown>;
-              return createTextLayer({
-                  id: str(t.id, newLayerId()),
-                  label: str(t.label, "Texto"),
-                  content: typeof t.content === "string" ? t.content.slice(0, 200) : "Texto",
-                  x: num(t.x, width / 2, -width, width * 2),
-                  y: num(t.y, height / 2, -height, height * 2),
-                  align: oneOf(t.align, ["left", "center", "right"] as const, "center"),
-                  fontFamily: str(t.fontFamily, FONT_OPTIONS[0].value),
-                  fontSize: num(t.fontSize, 40, 8, 200),
-                  fontWeight: num(t.fontWeight, 700, 100, 900),
-                  italic: bool(t.italic, false),
-                  uppercase: bool(t.uppercase, false),
-                  color: str(t.color, "#ffffff"),
-                  opacity: num(t.opacity, 1, 0, 1),
-                  letterSpacing: num(t.letterSpacing, 0, -20, 40),
-                  lineHeight: num(t.lineHeight, 1.2, 0.6, 3),
-                  maxWidth: t.maxWidth == null ? null : num(t.maxWidth, width, 20, width * 2),
-                  strokeWidth: num(t.strokeWidth, 0, 0, 20),
-                  strokeColor: str(t.strokeColor, "#000000"),
-                  shadowBlur: num(t.shadowBlur, 0, 0, 80),
-                  shadowOffsetX: num(t.shadowOffsetX, 0, -50, 50),
-                  shadowOffsetY: num(t.shadowOffsetY, 0, -50, 50),
-                  shadowColor: str(t.shadowColor, "#000000"),
-              });
-          })
+            const t = (item ?? {}) as Record<string, unknown>;
+            return createTextLayer({
+                id: str(t.id, newLayerId()),
+                label: str(t.label, "Texto"),
+                content: typeof t.content === "string" ? t.content.slice(0, 200) : "Texto",
+                x: num(t.x, width / 2, -width, width * 2),
+                y: num(t.y, height / 2, -height, height * 2),
+                align: oneOf(t.align, ["left", "center", "right"] as const, "center"),
+                fontFamily: str(t.fontFamily, FONT_OPTIONS[0].value),
+                fontSize: num(t.fontSize, 40, 8, 200),
+                fontWeight: num(t.fontWeight, 700, 100, 900),
+                italic: bool(t.italic, false),
+                uppercase: bool(t.uppercase, false),
+                color: str(t.color, "#ffffff"),
+                opacity: num(t.opacity, 1, 0, 1),
+                letterSpacing: num(t.letterSpacing, 0, -20, 40),
+                lineHeight: num(t.lineHeight, 1.2, 0.6, 3),
+                maxWidth: t.maxWidth == null ? null : num(t.maxWidth, width, 20, width * 2),
+                strokeWidth: num(t.strokeWidth, 0, 0, 20),
+                strokeColor: str(t.strokeColor, "#000000"),
+                shadowBlur: num(t.shadowBlur, 0, 0, 80),
+                shadowOffsetX: num(t.shadowOffsetX, 0, -50, 50),
+                shadowOffsetY: num(t.shadowOffsetY, 0, -50, 50),
+                shadowColor: str(t.shadowColor, "#000000"),
+            });
+        })
         : base.texts;
 
     return {
