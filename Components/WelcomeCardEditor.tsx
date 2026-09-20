@@ -28,6 +28,7 @@ import WelcomeCardCanvas from "./WelcomeCardCanvas";
 import WelcomeCardInspector from "./WelcomeCardInspector";
 import ChannelDropdown from "./ChannelDropdown";
 import { DiscordChannel } from "@/types/DiscordTypes";
+import { normalizeImageUrl } from "@/lib/imageUrl";
 
 /** Lo que realmente se persiste, serializado, para saber si hay cambios sin guardar. */
 function snapshot(setup: Omit<WelcomeCardSetup, "id" | "serverId">) {
@@ -151,12 +152,19 @@ export default function WelcomeCardEditor() {
                 if (!cancelled) setLoadedBackground({ url: backgroundUrl, img });
             })
             .catch(() => {
-                if (!cancelled) {
-                    setFeedback({
-                        type: "error",
-                        text: "Esa URL no devolvió una imagen. Tiene que ser el enlace directo al archivo (jpg, png, webp, gif…), no la página que lo muestra.",
-                    });
-                }
+                if (cancelled) return;
+
+                // Drive y OneDrive devuelven la pantalla de login cuando el archivo
+                // no es público, así que el motivo casi siempre es el permiso.
+                const { source } = normalizeImageUrl(backgroundUrl);
+
+                setFeedback({
+                    type: "error",
+                    text:
+                        source === "drive" || source === "onedrive"
+                            ? "No se pudo cargar el fondo. Abrí el archivo en Drive/OneDrive y compartilo como \"Cualquier persona con el enlace\": si está restringido, devuelve la pantalla de inicio de sesión en vez de la imagen."
+                            : "Esa URL no devolvió una imagen. Tiene que ser el enlace directo al archivo (jpg, png, webp, gif…), no la página que lo muestra.",
+                });
             });
 
         return () => {

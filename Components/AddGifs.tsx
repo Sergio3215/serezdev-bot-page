@@ -2,12 +2,15 @@
 
 import { addGifsType } from "@/types/Elements";
 import { useState, useEffect } from "react";
+import { avisoParaFuente, normalizeImageUrl } from "@/lib/imageUrl";
 
 export default function AddGifs({ interactions, idServer, goBack, defaultInteraction }: addGifsType) {
     const [url, setUrl] = useState<string>("");
     const [interactionValue, setInteractionValue] = useState<string>(defaultInteraction || "0");
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [errorMsg, setErrorMsg] = useState("");
+
+    const avisoUrl = url.trim() ? avisoParaFuente(normalizeImageUrl(url).source) : null;
 
     // Bloquear scroll de la página mientras el modal esté abierto y cerrar con Escape
     useEffect(() => {
@@ -136,11 +139,27 @@ export default function AddGifs({ interactions, idServer, goBack, defaultInterac
                                 setUrl(e.target.value);
                                 if (errorMsg) setErrorMsg("");
                             }}
+                            // Al salir del campo convertimos los links de Drive/OneDrive
+                            // a su URL directa; en onChange le reescribiríamos el texto
+                            // mientras todavía está tipeando.
+                            onBlur={(e) => {
+                                const { url: convertida, changed } = normalizeImageUrl(e.target.value);
+                                if (changed) setUrl(convertida);
+                            }}
                             required
                             placeholder="https://media.tenor.com/..."
                             disabled={isSubmitting}
                             className="w-full bg-[#111214] border border-white/20 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-[#5865F2] focus:ring-1 focus:ring-[#5865F2] transition-colors disabled:opacity-50"
                         />
+
+                        {avisoUrl ? (
+                            <p className="text-[10px] leading-relaxed text-amber-400">{avisoUrl}</p>
+                        ) : (
+                            <p className="text-[10px] leading-relaxed text-zinc-500">
+                                Los links de Google Drive y OneDrive se convierten solos, pero el archivo tiene que
+                                estar compartido con <strong className="text-zinc-400">cualquier persona con el enlace</strong>.
+                            </p>
+                        )}
                     </div>
 
                     {/* Selector de Interacción */}

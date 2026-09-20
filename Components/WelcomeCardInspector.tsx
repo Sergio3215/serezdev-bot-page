@@ -2,6 +2,7 @@
 
 import { welcomeInspectorType } from "@/types/WelcomeCard";
 import { CANVAS_PRESETS, FONT_OPTIONS, TEMPLATE_VARIABLES } from "@/lib/welcomeCard";
+import { avisoParaFuente, normalizeImageUrl } from "@/lib/imageUrl";
 
 /* ---------- controles reutilizables ---------- */
 
@@ -145,6 +146,7 @@ export default function WelcomeCardInspector({
 }: welcomeInspectorType) {
     const bg = config.background;
     const layer = selection?.kind === "text" ? config.texts.find((t) => t.id === selection.id) : undefined;
+    const avisoFondo = bg.imageUrl ? avisoParaFuente(normalizeImageUrl(bg.imageUrl).source) : null;
 
     return (
         <div className="space-y-4 rounded-2xl border border-white/10 bg-[#1e1f22] p-4 shadow-xl">
@@ -220,13 +222,26 @@ export default function WelcomeCardInspector({
                             type="url"
                             value={bg.imageUrl || ""}
                             onChange={(e) => onBackgroundChange({ imageUrl: e.target.value || null })}
+                            // Al salir del campo: si es un link de Drive/OneDrive, lo pasamos
+                            // a su URL directa. Se hace acá y no en onChange para no
+                            // reescribirle el texto mientras todavía está tipeando.
+                            onBlur={(e) => {
+                                const { url, changed } = normalizeImageUrl(e.target.value);
+                                if (changed) onBackgroundChange({ imageUrl: url });
+                            }}
                             placeholder="https://.../fondo.png"
                             className="w-full rounded-lg border border-white/10 bg-[#111214] px-2.5 py-1.5 text-xs text-white placeholder-zinc-600 focus:border-[#5865F2] focus:outline-none"
                         />
-                        <p className="text-[10px] leading-relaxed text-zinc-500">
-                            Enlace directo al archivo, en cualquier formato (jpg, png, webp, gif). Tiene que ser
-                            público: el bot lo descarga cada vez que genera la imagen.
-                        </p>
+
+                        {avisoFondo ? (
+                            <p className="text-[10px] leading-relaxed text-amber-400">{avisoFondo}</p>
+                        ) : (
+                            <p className="text-[10px] leading-relaxed text-zinc-500">
+                                Pegá el link de la imagen (jpg, png, webp, gif). Los de Google Drive y OneDrive se
+                                convierten solos, pero el archivo tiene que estar compartido con{" "}
+                                <strong className="text-zinc-400">cualquier persona con el enlace</strong>.
+                            </p>
+                        )}
                         <Row label="Ajuste">
                             <Segmented
                                 value={bg.fit}
