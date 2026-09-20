@@ -5,12 +5,15 @@ import { DiscordRole } from "@/types/DiscordTypes";
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import RoleDropdown from "./RoleDropdown";
+import WelcomeCardEditor from "./WelcomeCardEditor";
 
-const API_URL = "https://server-serez-dev-bot-production.up.railway.app/api/v1/joinServer/setup";
+const API_URL = `${process.env.NEXT_PUBLIC_URL || "https://server-serez-dev-bot-production.up.railway.app"}/api/v1/joinServer/setup`;
 
 export default function JoinServerSetup() {
     const params = useParams();
     const idServer = (params?.server as string) || "";
+
+    const [tab, setTab] = useState<"role" | "image">("role");
 
     const [setup, setSetup] = useState<joinServerType | null>(null);
     const [selectedRole, setSelectedRole] = useState<string>("");
@@ -134,18 +137,52 @@ export default function JoinServerSetup() {
     const hasChanges = selectedRole !== originalRole;
     const currentRole = roles.find(r => r.id === selectedRole);
 
+    // Las dos partes de la bienvenida: el rol que se asigna solo y la imagen que publica el bot.
+    const tabBar = (
+        <div className="flex gap-1 rounded-xl border border-white/10 bg-[#1e1f22] p-1">
+            {([
+                { id: "role", label: "🎭 Rol automático" },
+                { id: "image", label: "🖼️ Imagen de bienvenida" },
+            ] as const).map((item) => (
+                <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => setTab(item.id)}
+                    className={`flex-1 rounded-lg px-4 py-2 text-xs font-semibold transition-colors cursor-pointer ${tab === item.id
+                        ? "bg-[#5865F2] text-white shadow-lg shadow-[#5865F2]/20"
+                        : "text-zinc-400 hover:text-white"}`}
+                >
+                    {item.label}
+                </button>
+            ))}
+        </div>
+    );
+
+    if (tab === "image") {
+        return (
+            <div className="my-6 space-y-4">
+                {tabBar}
+                <WelcomeCardEditor />
+            </div>
+        );
+    }
+
     if (isLoading) {
         return (
-            <div className="flex flex-col items-center justify-center py-16 text-zinc-400 space-y-3">
-                <div className="w-8 h-8 border-4 border-[#5865F2] border-t-transparent rounded-full animate-spin"></div>
-                <p className="text-sm font-medium">Cargando configuración de bienvenida...</p>
+            <div className="max-w-3xl mx-auto my-6 space-y-4">
+                {tabBar}
+                <div className="flex flex-col items-center justify-center py-16 text-zinc-400 space-y-3">
+                    <div className="w-8 h-8 border-4 border-[#5865F2] border-t-transparent rounded-full animate-spin"></div>
+                    <p className="text-sm font-medium">Cargando configuración de bienvenida...</p>
+                </div>
             </div>
         );
     }
 
     if (!setup && !isConfiguring) {
         return (
-            <div className="max-w-3xl mx-auto my-6">
+            <div className="max-w-3xl mx-auto my-6 space-y-4">
+                {tabBar}
                 <div className="bg-[#1e1f22] border border-white/10 rounded-2xl p-10 shadow-xl text-center space-y-5">
                     <div className="mx-auto w-16 h-16 rounded-2xl bg-[#5865F2]/10 border border-[#5865F2]/20 flex items-center justify-center text-3xl">
                         👋
@@ -173,7 +210,8 @@ export default function JoinServerSetup() {
     }
 
     return (
-        <div className="max-w-3xl mx-auto my-6">
+        <div className="max-w-3xl mx-auto my-6 space-y-4">
+            {tabBar}
             <div className="bg-[#1e1f22] border border-white/10 rounded-2xl p-6 shadow-xl space-y-4">
                 <div className="border-b border-white/10 pb-4">
                     <h2 className="text-xl font-bold text-white">👋 Bienvenida al Servidor</h2>

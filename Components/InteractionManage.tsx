@@ -17,7 +17,7 @@ export default function InteractionManage({ newFlag, setNewFlag }: interactionMa
 
     useEffect(() => {
         let isCancelled = false;
-        fetch("https://server-serez-dev-bot-production.up.railway.app/api/v1/gif/getInteractions")
+        fetch(`${process.env.NEXT_PUBLIC_URL || "https://server-serez-dev-bot-production.up.railway.app"}/api/v1/gif/getInteractions`)
             .then(res => res.json())
             .then(res => {
                 if (!isCancelled) {
@@ -36,7 +36,7 @@ export default function InteractionManage({ newFlag, setNewFlag }: interactionMa
 
     const getGifs = useCallback(() => {
         if (!selectedInteraction) return;
-        fetch(`https://server-serez-dev-bot-production.up.railway.app/api/v1/gif/getInteractionByName?name=${selectedInteraction}&serverId=${idServer}`)
+        fetch(`${process.env.NEXT_PUBLIC_URL || "https://server-serez-dev-bot-production.up.railway.app"}/api/v1/gif/getInteractionByName?name=${selectedInteraction}&serverId=${idServer}`)
             .then(res => res.json())
             .then(res => {
                 setGifsItems(res.data);

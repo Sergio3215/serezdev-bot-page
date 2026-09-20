@@ -69,7 +69,7 @@ export default function GifButtons({ gifsItem, gifsArray, index }: gifButtons) {
         setErrorMsg("");
 
         try {
-            const ftch = await fetch("https://server-serez-dev-bot-production.up.railway.app/api/v1/gif/editGif", {
+            const ftch = await fetch(`${process.env.NEXT_PUBLIC_URL || "https://server-serez-dev-bot-production.up.railway.app"}/api/v1/gif/editGif`, {
                 method: "put",
                 headers: {
                     "Content-Type": "application/json"

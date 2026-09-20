@@ -51,3 +51,22 @@ export interface roleDropdownType {
     loading?: boolean;
     error?: string | null;
 }
+
+export interface DiscordChannel {
+    id: string;
+    name: string;
+    /** 0 = texto, 5 = anuncios */
+    type: number;
+    categoryName: string | null;
+    /** false cuando al bot le falta ver el canal, escribir o adjuntar archivos. */
+    canSend: boolean;
+}
+
+export interface channelDropdownType {
+    channels: DiscordChannel[];
+    value: string | null;
+    onChange: (channelId: string) => void;
+    disabled?: boolean;
+    loading?: boolean;
+    error?: string | null;
+}

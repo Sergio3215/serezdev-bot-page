@@ -43,7 +43,7 @@ export default function ServerDashboard({ filteredGuilds }: serverSelect) {
 
     const comprobateBirthdaySetup = async () => {
         try {
-            const ftch = await fetch(`https://server-serez-dev-bot-production.up.railway.app/api/v1/birthday/setup?serverId=${idServer}`);
+            const ftch = await fetch(`${process.env.NEXT_PUBLIC_URL || "https://server-serez-dev-bot-production.up.railway.app"}/api/v1/birthday/setup?serverId=${idServer}`);
             const dto = await ftch.json();
 
             if (dto.data && dto.data.length !== 0) {

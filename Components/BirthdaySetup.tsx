@@ -22,7 +22,7 @@ export default function BirthdaySetup() {
 
         let isCancelled = false;
 
-        fetch(`https://server-serez-dev-bot-production.up.railway.app/api/v1/birthday/setup?serverId=${idServer}`)
+        fetch(`${process.env.NEXT_PUBLIC_URL || "https://server-serez-dev-bot-production.up.railway.app"}/api/v1/birthday/setup?serverId=${idServer}`)
             .then((res) => {
                 if (!res.ok) {
                     throw new Error(`Error ${res.status}`);
@@ -76,7 +76,7 @@ export default function BirthdaySetup() {
         setStatusFeedback(null);
 
         try {
-            const res = await fetch("https://server-serez-dev-bot-production.up.railway.app/api/v1/birthday/setup", {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_URL || "https://server-serez-dev-bot-production.up.railway.app"}/api/v1/birthday/setup`, {
                 method: "PUT",
                 headers: {
                     "Content-Type": "application/json"
@@ -175,8 +175,8 @@ export default function BirthdaySetup() {
                 {statusFeedback && (
                     <div
                         className={`p-3.5 rounded-xl text-sm flex items-center justify-between border ${statusFeedback.type === "success"
-                                ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-                                : "bg-red-500/10 text-red-400 border-red-500/20"
+                            ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                            : "bg-red-500/10 text-red-400 border-red-500/20"
                             }`}
                     >
                         <span className="flex items-center gap-2">

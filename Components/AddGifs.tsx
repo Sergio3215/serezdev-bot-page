@@ -49,7 +49,7 @@ export default function AddGifs({ interactions, idServer, goBack, defaultInterac
         };
 
         try {
-            const ftch = await fetch("https://server-serez-dev-bot-production.up.railway.app/api/v1/gif/addGif", {
+            const ftch = await fetch(`${process.env.NEXT_PUBLIC_URL || "https://server-serez-dev-bot-production.up.railway.app"}/api/v1/gif/addGif`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json"
