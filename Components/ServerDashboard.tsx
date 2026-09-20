@@ -79,56 +79,58 @@ export default function ServerDashboard({ filteredGuilds }: serverSelect) {
                                         <hr className="mt-4 border-white/10" />
                                     </div>
                                     <div className="flex flex-col">
-                                        {
-                                            state == "" && (
-                                                <>
-                                                    <Section title="Administrá el Recordatorio de Cumpleaños">
-                                                        <ButtonDiscord onClick={() => {
-                                                            comprobateBirthdaySetup();
-                                                        }} title={`Administrar Recordatorio &rarr;`} />
-                                                    </Section>
-                                                    <Section title="Bienvenida al Servidor">
-                                                        <ButtonDiscord onClick={() => {
-                                                            setState("joinServer");
-                                                            setTitle("Administrá la Bienvenida")
-                                                        }} title={`Administrar Bienvenida &rarr;`} />
-                                                    </Section>
-                                                    <Section title="Administración de Interacciones">
-                                                        <ButtonDiscord onClick={() => {
-                                                            setState("gif");
-                                                            setTitle("Administrador de Interacciones")
-                                                        }} title={`Administrar &rarr;`} />
-                                                    </Section>
-                                                    <Section title="Reiniciar el Bot">
-                                                        <button
-                                                            onClick={resetBot}
-                                                            disabled={isResetting}
-                                                            className="inline-flex items-center gap-2 rounded-xl bg-[#6e0a0a] px-5 py-2.5 text-xs font-semibold text-white shadow-lg shadow-[#6e0a0a]/25 transition-all hover:bg-[#bd2e2e] disabled:opacity-50 disabled:cursor-not-allowed mb-2 cursor-pointer"
-                                                        >
-                                                            {isResetting ? (
-                                                                <>
-                                                                    <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
-                                                                    <span>Reiniciando bot...</span>
-                                                                </>
-                                                            ) : (
-                                                                <span>Reiniciar Bot</span>
-                                                            )}
-                                                        </button>
-                                                    </Section>
+                                        <div className="flex flex-row flex-wrap gap-6 justify-center items-center">
+                                            {
+                                                state == "" && (
+                                                    <>
+                                                        <Section title="Administrá el Recordatorio de Cumpleaños">
+                                                            <ButtonDiscord onClick={() => {
+                                                                comprobateBirthdaySetup();
+                                                            }} title={`Administrar &rarr;`} />
+                                                        </Section>
+                                                        <Section title="Bienvenida al Servidor">
+                                                            <ButtonDiscord onClick={() => {
+                                                                setState("joinServer");
+                                                                setTitle("Administrá la Bienvenida")
+                                                            }} title={`Administrar &rarr;`} />
+                                                        </Section>
+                                                        <Section title="Administración de Interacciones">
+                                                            <ButtonDiscord onClick={() => {
+                                                                setState("gif");
+                                                                setTitle("Administrador de Interacciones")
+                                                            }} title={`Administrar &rarr;`} />
+                                                        </Section>
+                                                        <Section title="Reiniciar el Bot">
+                                                            <button
+                                                                onClick={resetBot}
+                                                                disabled={isResetting}
+                                                                className="inline-flex items-center gap-2 rounded-xl bg-[#6e0a0a] shadow-[#bd2e2e]/20 hover:bg-[#bd2e2e] px-6 py-4 text-xs font-semibold text-white shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed mb-2 cursor-pointer"
+                                                            >
+                                                                {isResetting ? (
+                                                                    <>
+                                                                        <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+                                                                        <span>Reiniciando bot...</span>
+                                                                    </>
+                                                                ) : (
+                                                                    <span>Reiniciar Bot</span>
+                                                                )}
+                                                            </button>
+                                                        </Section>
 
-                                                    {statusMessage && (
-                                                        <div
-                                                            className={`mt-4 rounded-xl p-3 text-xs border ${statusMessage.isError
-                                                                ? "border-red-500/30 bg-red-500/10 text-red-300"
-                                                                : "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
-                                                                }`}
-                                                        >
-                                                            {statusMessage.text}
-                                                        </div>
-                                                    )}
-                                                </>
-                                            )
-                                        }
+                                                        {statusMessage && (
+                                                            <div
+                                                                className={`mt-4 rounded-xl p-3 text-xs border ${statusMessage.isError
+                                                                    ? "border-red-500/30 bg-red-500/10 text-red-300"
+                                                                    : "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
+                                                                    }`}
+                                                            >
+                                                                {statusMessage.text}
+                                                            </div>
+                                                        )}
+                                                    </>
+                                                )
+                                            }
+                                        </div>
 
                                         {
                                             state != "" && (

@@ -22,6 +22,8 @@ export async function checkGuildAdmin(userToken: string, guildId: string): Promi
             const detail = await res.text().catch(() => "");
             console.error(`[guildAccess] /users/@me/guilds respondió ${res.status}:`, detail);
 
+            console.log(res.ok)
+
             if (res.status === 401) return { status: "unauthenticated" };
             return { status: "unknown", httpStatus: res.status };
         }
