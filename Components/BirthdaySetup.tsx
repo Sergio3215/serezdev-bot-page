@@ -3,10 +3,13 @@
 import { birthdayType } from "@/types/Elements";
 import { useEffect, useState, useRef } from "react";
 import { useParams } from "next/navigation";
+import BirthdayCardEditor from "./BirthdayCardEditor";
 
 export default function BirthdaySetup() {
     const params = useParams();
     const idServer = (params?.server as string) || "";
+
+    const [tab, setTab] = useState<"message" | "image">("message");
 
     const [birthdayData, setBirthdayData] = useState<birthdayType | null>(null);
     const [message, setMessage] = useState<string>("");
@@ -141,17 +144,52 @@ export default function BirthdaySetup() {
             .replace(/\$edad/g, "24")
         : "Escribe un mensaje para previsualizar...";
 
+    // Las dos partes del saludo: el texto que manda el bot y la imagen que lo acompaña.
+    const tabBar = (
+        <div className="flex gap-1 rounded-xl border border-white/10 bg-[#1e1f22] p-1">
+            {([
+                { id: "message", label: "💬 Mensaje" },
+                { id: "image", label: "🎂 Imagen de cumpleaños" },
+            ] as const).map((item) => (
+                <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => setTab(item.id)}
+                    className={`flex-1 rounded-lg px-4 py-2 text-xs font-semibold transition-colors cursor-pointer ${tab === item.id
+                        ? "bg-[#5865F2] text-white shadow-lg shadow-[#5865F2]/20"
+                        : "text-zinc-400 hover:text-white"}`}
+                >
+                    {item.label}
+                </button>
+            ))}
+        </div>
+    );
+
     if (isLoading) {
         return (
-            <div className="flex flex-col items-center justify-center py-16 text-zinc-400 space-y-3">
-                <div className="w-8 h-8 border-4 border-[#5865F2] border-t-transparent rounded-full animate-spin"></div>
-                <p className="text-sm font-medium">Cargando configuración de cumpleaños...</p>
+            <div className="max-w-3xl mx-auto my-6 space-y-4">
+                {tabBar}
+                <div className="flex flex-col items-center justify-center py-16 text-zinc-400 space-y-3">
+                    <div className="w-8 h-8 border-4 border-[#5865F2] border-t-transparent rounded-full animate-spin"></div>
+                    <p className="text-sm font-medium">Cargando configuración de cumpleaños...</p>
+                </div>
+            </div>
+        );
+    }
+
+    // El canal sale de acá, no del editor: la imagen viaja adjunta a este mismo mensaje.
+    if (tab === "image") {
+        return (
+            <div className="my-6 space-y-4">
+                {tabBar}
+                <BirthdayCardEditor channelId={birthdayData?.channelId ?? null} />
             </div>
         );
     }
 
     return (
         <div className="max-w-3xl mx-auto my-6 space-y-6">
+            {tabBar}
             {/* Encabezado y datos del servidor */}
             <div className="bg-[#1e1f22] border border-white/10 rounded-2xl p-6 shadow-xl space-y-4">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/10 pb-4">
