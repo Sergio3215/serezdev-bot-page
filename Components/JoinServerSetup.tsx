@@ -6,6 +6,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import RoleDropdown from "./RoleDropdown";
 import WelcomeCardEditor from "./WelcomeCardEditor";
+import DiscordRefreshButton from "./DiscordRefreshButton";
 
 const API_URL = `${process.env.NEXT_PUBLIC_URL || "https://server-serez-dev-bot-production.up.railway.app"}/api/v1/joinServer/setup`;
 
@@ -52,20 +53,43 @@ export default function JoinServerSetup() {
     }, [idServer]);
 
     const loadRoles = useCallback(async (signal: AbortSignal) => {
+        // Mantiene los cambios de estado fuera del cuerpo síncrono del effect inicial.
+        await Promise.resolve();
+        if (signal.aborted) return;
+
+        setLoadingRoles(true);
+        setRolesError(null);
+
         try {
-            const res = await fetch(`/api/guilds/${idServer}/roles`, { signal });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.error || `Error ${res.status}`);
+            const res = await fetch(`/api/guilds/${idServer}/roles`, {
+                signal,
+                cache: "no-store",
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                throw new Error(
+                    res.status === 429
+                        ? "Discord alcanzó el límite de solicitudes. Esperá unos segundos y volvé a actualizar."
+                        : data.error || `No se pudieron cargar los roles (error ${res.status}).`
+                );
+            }
 
             setRoles(data.roles || []);
         } catch (err) {
             if (signal.aborted) return;
             console.error("Error al obtener los roles:", err);
-            setRolesError("No se pudieron cargar los roles del servidor.");
+            setRolesError(
+                err instanceof Error ? err.message : "No se pudieron cargar los roles del servidor."
+            );
         } finally {
             if (!signal.aborted) setLoadingRoles(false);
         }
     }, [idServer]);
+
+    const refreshRoles = () => {
+        const controller = new AbortController();
+        void loadRoles(controller.signal);
+    };
 
 
     useEffect(() => {
@@ -234,14 +258,24 @@ export default function JoinServerSetup() {
                             Rol de bienvenida <span className="text-red-400">*</span>
                         </label>
 
-                        <RoleDropdown
-                            roles={roles}
-                            value={selectedRole}
-                            onChange={(roleId) => { setSelectedRole(roleId); setFeedback(null); }}
-                            disabled={isSaving}
-                            loading={loadingRoles}
-                            error={rolesError}
-                        />
+                        <div className="flex items-start gap-2">
+                            <div className="min-w-0 flex-1">
+                                <RoleDropdown
+                                    roles={roles}
+                                    value={selectedRole}
+                                    onChange={(roleId) => { setSelectedRole(roleId); setFeedback(null); }}
+                                    disabled={isSaving}
+                                    loading={loadingRoles}
+                                    error={rolesError}
+                                />
+                            </div>
+                            <DiscordRefreshButton
+                                resource="roles"
+                                loading={loadingRoles}
+                                disabled={isSaving || loadingRoles || !idServer}
+                                onRefresh={refreshRoles}
+                            />
+                        </div>
                     </div>
 
                     <div className="bg-[#111214] border border-white/10 rounded-xl p-4 text-sm text-zinc-200">

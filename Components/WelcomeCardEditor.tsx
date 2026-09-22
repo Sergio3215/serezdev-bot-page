@@ -29,6 +29,7 @@ import WelcomeCardInspector from "./WelcomeCardInspector";
 import ChannelDropdown from "./ChannelDropdown";
 import { DiscordChannel } from "@/types/DiscordTypes";
 import { normalizeImageUrl } from "@/lib/imageUrl";
+import DiscordRefreshButton from "./DiscordRefreshButton";
 
 /** Lo que realmente se persiste, serializado, para saber si hay cambios sin guardar. */
 function snapshot(setup: Omit<WelcomeCardSetup, "id" | "serverId">) {
@@ -109,32 +110,56 @@ export default function WelcomeCardEditor() {
 
     /* ---------------- canales del servidor ---------------- */
 
+    const loadChannels = useCallback(async (signal: AbortSignal) => {
+        // Mantiene los cambios de estado fuera del cuerpo síncrono del effect inicial.
+        await Promise.resolve();
+        if (signal.aborted) return;
+
+        setLoadingChannels(true);
+        setChannelsError(null);
+
+        try {
+            const res = await fetch(`/api/guilds/${idServer}/channels`, {
+                signal,
+                cache: "no-store",
+            });
+            const data = await res.json().catch(() => ({}));
+
+            if (!res.ok) {
+                throw new Error(
+                    res.status === 429
+                        ? "Discord alcanzó el límite de solicitudes. Esperá unos segundos y volvé a actualizar."
+                        : data.error || `No se pudieron cargar los canales (error ${res.status}).`
+                );
+            }
+
+            if (!signal.aborted) setChannels(data.channels || []);
+        } catch (err) {
+            if (signal.aborted) return;
+            console.error("Error al obtener los canales:", err);
+            setChannelsError(
+                err instanceof Error ? err.message : "No se pudieron cargar los canales del servidor."
+            );
+        } finally {
+            if (!signal.aborted) setLoadingChannels(false);
+        }
+    }, [idServer]);
+
     useEffect(() => {
         if (!idServer) return;
 
         const controller = new AbortController();
-
-        fetch(`/api/guilds/${idServer}/channels`, { signal: controller.signal })
-            .then(async (res) => {
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.error || `Error ${res.status}`);
-                return data;
-            })
-            .then((data) => {
-                if (!controller.signal.aborted) {
-                    setChannels(data.channels || []);
-                    setLoadingChannels(false);
-                }
-            })
-            .catch((err) => {
-                if (controller.signal.aborted) return;
-                console.error("Error al obtener los canales:", err);
-                setChannelsError("No se pudieron cargar los canales del servidor.");
-                setLoadingChannels(false);
-            });
+        // Los setState de loadChannels ocurren después de un await, no durante el effect.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        void loadChannels(controller.signal);
 
         return () => controller.abort();
-    }, [idServer]);
+    }, [idServer, loadChannels]);
+
+    const refreshChannels = () => {
+        const controller = new AbortController();
+        void loadChannels(controller.signal);
+    };
 
     /* ---------------- imágenes del lienzo ---------------- */
 
@@ -381,16 +406,14 @@ export default function WelcomeCardEditor() {
                             setEnabled(!enabled);
                             markDirty();
                         }}
-                        className={`relative h-6 w-11 shrink-0 rounded-full transition-colors cursor-pointer ${
-                            enabled ? "bg-emerald-500" : "bg-zinc-600"
-                        }`}
+                        className={`relative h-6 w-11 shrink-0 rounded-full transition-colors cursor-pointer ${enabled ? "bg-emerald-500" : "bg-zinc-600"
+                            }`}
                     >
                         {/* left-0.5 explícito: sin él el knob nace centrado (los button
                             traen text-align: center) y se sale del riel al desplazarse. */}
                         <span
-                            className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white transition-transform ${
-                                enabled ? "translate-x-5" : "translate-x-0"
-                            }`}
+                            className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white transition-transform ${enabled ? "translate-x-5" : "translate-x-0"
+                                }`}
                         />
                     </button>
                     <div>
@@ -443,13 +466,12 @@ export default function WelcomeCardEditor() {
 
             {feedback && (
                 <div
-                    className={`rounded-xl border p-3.5 text-sm ${
-                        feedback.type === "success"
-                            ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-400"
-                            : feedback.type === "info"
-                              ? "border-amber-500/20 bg-amber-500/10 text-amber-300"
-                              : "border-red-500/20 bg-red-500/10 text-red-400"
-                    }`}
+                    className={`rounded-xl border p-3.5 text-sm ${feedback.type === "success"
+                        ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-400"
+                        : feedback.type === "info"
+                            ? "border-amber-500/20 bg-amber-500/10 text-amber-300"
+                            : "border-red-500/20 bg-red-500/10 text-red-400"
+                        }`}
                 >
                     {feedback.type === "success" ? "✅" : feedback.type === "info" ? "ℹ️" : "⚠️"} {feedback.text}
                 </div>
@@ -498,11 +520,10 @@ export default function WelcomeCardEditor() {
                         <button
                             type="button"
                             onClick={() => setSelection({ kind: "avatar" })}
-                            className={`flex w-full items-center gap-2.5 rounded-xl border px-3 py-2 text-left transition-colors cursor-pointer ${
-                                selection?.kind === "avatar"
-                                    ? "border-[#5865F2] bg-[#5865F2]/10"
-                                    : "border-white/10 bg-[#111214] hover:border-white/20"
-                            }`}
+                            className={`flex w-full items-center gap-2.5 rounded-xl border px-3 py-2 text-left transition-colors cursor-pointer ${selection?.kind === "avatar"
+                                ? "border-[#5865F2] bg-[#5865F2]/10"
+                                : "border-white/10 bg-[#111214] hover:border-white/20"
+                                }`}
                         >
                             <span className="text-sm">🖼️</span>
                             <span className="flex-1 truncate text-xs font-medium text-white">Avatar</span>
@@ -514,9 +535,8 @@ export default function WelcomeCardEditor() {
                             return (
                                 <div
                                     key={layer.id}
-                                    className={`flex items-center gap-1.5 rounded-xl border px-3 py-2 transition-colors ${
-                                        isSelected ? "border-[#5865F2] bg-[#5865F2]/10" : "border-white/10 bg-[#111214]"
-                                    }`}
+                                    className={`flex items-center gap-1.5 rounded-xl border px-3 py-2 transition-colors ${isSelected ? "border-[#5865F2] bg-[#5865F2]/10" : "border-white/10 bg-[#111214]"
+                                        }`}
                                 >
                                     <button
                                         type="button"
@@ -564,17 +584,27 @@ export default function WelcomeCardEditor() {
                         <h3 className="text-[11px] font-bold uppercase tracking-wider text-zinc-500">
                             Canal de bienvenida <span className="text-red-400">*</span>
                         </h3>
-                        <ChannelDropdown
-                            channels={channels}
-                            value={channelId}
-                            onChange={(id) => {
-                                setChannelId(id);
-                                markDirty();
-                            }}
-                            disabled={isSaving}
-                            loading={loadingChannels}
-                            error={channelsError}
-                        />
+                        <div className="flex items-start gap-2">
+                            <div className="min-w-0 flex-1">
+                                <ChannelDropdown
+                                    channels={channels}
+                                    value={channelId}
+                                    onChange={(id) => {
+                                        setChannelId(id);
+                                        markDirty();
+                                    }}
+                                    disabled={isSaving}
+                                    loading={loadingChannels}
+                                    error={channelsError}
+                                />
+                            </div>
+                            <DiscordRefreshButton
+                                resource="canales"
+                                loading={loadingChannels}
+                                disabled={isSaving || loadingChannels || !idServer}
+                                onRefresh={refreshChannels}
+                            />
+                        </div>
                         {!loadingChannels && !channelsError && channels.length === 0 && (
                             <p className="text-[10px] leading-relaxed text-amber-400">
                                 El bot no ve ningún canal de texto en este servidor.
