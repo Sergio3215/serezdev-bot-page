@@ -9,46 +9,53 @@
  *
  * 1. **No repite el canal ni el mensaje.** Los dos ya están guardados en el
  *    documento de cumpleaños (`/api/v1/birthday/setup` los devuelve en
- *    `channelId` y `message`), así que acá solo vive el diseño. La imagen viaja
- *    adjunta a ese mismo mensaje, que se sigue editando en su pestaña.
+ *    `channelId` y `message`), así que acá solo vive el diseño.
  * 2. **Tiene adornos.** Confeti, globos, estrellas o corazones dibujados por
- *    código, con semilla, para que la imagen sea festiva sin depender de que el
- *    admin consiga un fondo.
+ *    código, con semilla, para que la imagen sea festiva sin depender de un fondo.
  *
- * Este archivo es independiente del de bienvenida a propósito: las dos tarjetas
- * se parecen hoy, pero cada una puede cambiar sin arrastrar a la otra.
+ * Las piezas comunes (lienzo, fondo, avatar, capa de texto y tipos de render)
+ * viven en `@/lib/card/types`; acá solo lo propio del cumpleaños.
  */
+
+import type {
+    BackgroundType,
+    BackgroundFit,
+    AvatarShape,
+    TextAlign,
+    BaseCardConfig,
+    CardAvatar,
+    CardBackground,
+    CardCanvas,
+    CardTextLayer,
+    SelectionTarget,
+    HitBox,
+    LayerHit,
+    RenderImages,
+    RenderOptions,
+} from "@/lib/card/types";
 
 /** Subila cada vez que cambies la forma del JSON, para poder migrar lo guardado. */
 export const BIRTHDAY_CARD_VERSION = 1;
 
-export type BackgroundType = "color" | "gradient" | "image";
-export type BackgroundFit = "cover" | "contain" | "stretch";
-export type AvatarShape = "circle" | "rounded" | "square";
-export type TextAlign = "left" | "center" | "right";
+export type {
+    BackgroundType,
+    BackgroundFit,
+    AvatarShape,
+    TextAlign,
+    SelectionTarget,
+    HitBox,
+    LayerHit,
+    RenderImages,
+    RenderOptions,
+};
+
 export type DecorationType = "none" | "confetti" | "balloons" | "stars" | "hearts";
 
-export interface BirthdayCanvas {
-    /** Medidas del lienzo en píxeles. Todas las coordenadas son relativas a esto. */
-    width: number;
-    height: number;
-}
-
-export interface BirthdayBackground {
-    type: BackgroundType;
-    /** type === "color" */
-    color: string;
-    /** type === "gradient" */
-    gradient: { from: string; to: string; angle: number };
-    /** type === "image" */
-    imageUrl: string | null;
-    fit: BackgroundFit;
-    /** Desenfoque del fondo en px (0 = sin desenfoque). */
-    blur: number;
-    /** Capa de color por encima del fondo, para que el texto se lea. */
-    overlayColor: string;
-    overlayOpacity: number;
-}
+export type BirthdayCanvas = CardCanvas;
+export type BirthdayBackground = CardBackground;
+export type BirthdayAvatar = CardAvatar;
+/** Igual que la capa base; sus variables son $nombre, $usuario, $edad, $servidor, $fecha. */
+export type BirthdayTextLayer = CardTextLayer;
 
 /** Lo que hace que la tarjeta se vea de cumpleaños sin pedirle un fondo al admin. */
 export interface BirthdayDecoration {
@@ -68,59 +75,8 @@ export interface BirthdayDecoration {
     size: number;
 }
 
-export interface BirthdayAvatar {
-    enabled: boolean;
-    /** Centro del avatar. */
-    x: number;
-    y: number;
-    /** Diámetro / lado en px. */
-    size: number;
-    shape: AvatarShape;
-    /** Radio de las esquinas cuando shape === "rounded". */
-    radius: number;
-    borderWidth: number;
-    borderColor: string;
-    shadowBlur: number;
-    shadowColor: string;
-}
-
-export interface BirthdayTextLayer {
-    id: string;
-    /** Nombre de la capa en el editor. No lo usa el bot. */
-    label: string;
-    /** Puede incluir variables: $nombre, $usuario, $edad, $servidor, $fecha. */
-    content: string;
-    /** Punto de anclaje: x depende de `align`, y es siempre el centro vertical. */
-    x: number;
-    y: number;
-    align: TextAlign;
-    fontFamily: string;
-    fontSize: number;
-    fontWeight: number;
-    italic: boolean;
-    uppercase: boolean;
-    color: string;
-    opacity: number;
-    letterSpacing: number;
-    /** Multiplicador del alto de línea (1.2 = 120% del tamaño de fuente). */
-    lineHeight: number;
-    /** Si el texto es más ancho, se achica la fuente hasta entrar. null = sin límite. */
-    maxWidth: number | null;
-    strokeWidth: number;
-    strokeColor: string;
-    shadowBlur: number;
-    shadowOffsetX: number;
-    shadowOffsetY: number;
-    shadowColor: string;
-}
-
-export interface BirthdayCardConfig {
-    version: number;
-    canvas: BirthdayCanvas;
-    background: BirthdayBackground;
+export interface BirthdayCardConfig extends BaseCardConfig {
     decoration: BirthdayDecoration;
-    avatar: BirthdayAvatar;
-    texts: BirthdayTextLayer[];
 }
 
 /**
@@ -144,33 +100,6 @@ export interface BirthdayCardSample {
     avatarUrl: string;
     /** Fecha a mostrar. Vacío = la de hoy, que es lo que va a usar el bot. */
     date: string;
-}
-
-export type SelectionTarget =
-    | { kind: "avatar" }
-    | { kind: "text"; id: string };
-
-export interface HitBox {
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-}
-
-export interface LayerHit {
-    target: SelectionTarget;
-    box: HitBox;
-}
-
-export interface RenderImages {
-    background: CanvasImageSource | null;
-    avatar: CanvasImageSource | null;
-}
-
-export interface RenderOptions {
-    /** Dibuja el marco de selección. El bot nunca pasa esto. */
-    selection?: SelectionTarget | null;
-    guides?: { vertical: boolean; horizontal: boolean };
 }
 
 /* ---------- props de los componentes del editor ---------- */

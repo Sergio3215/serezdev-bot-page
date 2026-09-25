@@ -1,10 +1,10 @@
 "use client"
 import { ManageSettingType } from "@/types/Elements";
-import InteractionManage from "./InteractionManage";
-import ButtonDiscord from "./ButtonDiscord";
+import InteractionManage from "@/Components/gifs/InteractionManage";
+import ButtonDiscord from "@/Components/ui/ButtonDiscord";
 import { useState } from "react";
-import BirthdaySetup from "./BirthdaySetup";
-import JoinServerSetup from "./JoinServerSetup";
+import BirthdaySetup from "@/Components/birthday/BirthdaySetup";
+import JoinServerSetup from "@/Components/welcome/JoinServerSetup";
 
 export default function ManageSetting({ title, state, setState }: ManageSettingType) {
     const [newFlag, setNewFlag] = useState<boolean>(false);

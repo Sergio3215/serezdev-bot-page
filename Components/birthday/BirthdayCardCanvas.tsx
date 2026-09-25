@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { LayerHit, SelectionTarget, birthdayCanvasType } from "@/types/BirthdayCard";
-import { drawBirthdayCard, FONT_OPTIONS } from "@/lib/birthdayCard";
+import { drawBirthdayCard } from "@/lib/birthdayCard";
+import { loadCardFonts } from "@/lib/card/fonts";
 
 /** Distancia en px del lienzo a la que un elemento se pega al centro. */
 const SNAP = 8;
@@ -37,21 +38,10 @@ export default function BirthdayCardCanvas({
     const [fuentesListas, setFuentesListas] = useState(false);
 
     useEffect(() => {
-        if (typeof document === "undefined" || !document.fonts) return;
-
         let cancelled = false;
-
-        const cargas = FONT_OPTIONS.flatMap((opcion) => {
-            const familia = opcion.value.split(",")[0].trim();
-            return ["400", "700", "italic 400", "italic 700"].map((estilo) =>
-                document.fonts.load(`${estilo} 40px ${familia}`).catch(() => null)
-            );
-        });
-
-        Promise.all(cargas).then(() => {
+        loadCardFonts().then(() => {
             if (!cancelled) setFuentesListas(true);
         });
-
         return () => {
             cancelled = true;
         };

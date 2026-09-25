@@ -3,7 +3,7 @@
 import { birthdayType } from "@/types/Elements";
 import { useEffect, useState, useRef } from "react";
 import { useParams } from "next/navigation";
-import BirthdayCardEditor from "./BirthdayCardEditor";
+import BirthdayCardEditor from "@/Components/birthday/BirthdayCardEditor";
 
 export default function BirthdaySetup() {
     const params = useParams();

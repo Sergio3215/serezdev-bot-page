@@ -4,91 +4,50 @@
  * Lo que se guarda en la base de datos NO es una imagen: es esta "receta"
  * declarativa. El bot la lee cuando entra un miembro y dibuja el PNG en ese
  * momento, ya con el avatar y el nombre reales.
+ *
+ * Las piezas comunes con la tarjeta de cumpleaños (lienzo, fondo, avatar, capa de
+ * texto y tipos de render) viven en `@/lib/card/types`; acá solo lo propio de la
+ * bienvenida.
  */
+
+import type {
+    BackgroundType,
+    BackgroundFit,
+    AvatarShape,
+    TextAlign,
+    BaseCardConfig,
+    CardAvatar,
+    CardBackground,
+    CardCanvas,
+    CardTextLayer,
+    SelectionTarget,
+    HitBox,
+    LayerHit,
+    RenderImages,
+    RenderOptions,
+} from "@/lib/card/types";
 
 /** Subila cada vez que cambies la forma del JSON, para poder migrar lo guardado. */
 export const WELCOME_CARD_VERSION = 1;
 
-export type BackgroundType = "color" | "gradient" | "image";
-export type BackgroundFit = "cover" | "contain" | "stretch";
-export type AvatarShape = "circle" | "rounded" | "square";
-export type TextAlign = "left" | "center" | "right";
+export type {
+    BackgroundType,
+    BackgroundFit,
+    AvatarShape,
+    TextAlign,
+    SelectionTarget,
+    HitBox,
+    LayerHit,
+    RenderImages,
+    RenderOptions,
+};
 
-export interface WelcomeCanvas {
-    /** Medidas del lienzo en píxeles. Todas las coordenadas son relativas a esto. */
-    width: number;
-    height: number;
-}
-
-export interface WelcomeBackground {
-    type: BackgroundType;
-    /** type === "color" */
-    color: string;
-    /** type === "gradient" */
-    gradient: { from: string; to: string; angle: number };
-    /** type === "image" */
-    imageUrl: string | null;
-    fit: BackgroundFit;
-    /** Desenfoque del fondo en px (0 = sin desenfoque). */
-    blur: number;
-    /** Capa de color por encima del fondo, para que el texto se lea. */
-    overlayColor: string;
-    overlayOpacity: number;
-}
-
-export interface WelcomeAvatar {
-    enabled: boolean;
-    /** Centro del avatar. */
-    x: number;
-    y: number;
-    /** Diámetro / lado en px. */
-    size: number;
-    shape: AvatarShape;
-    /** Radio de las esquinas cuando shape === "rounded". */
-    radius: number;
-    borderWidth: number;
-    borderColor: string;
-    shadowBlur: number;
-    shadowColor: string;
-}
-
-export interface WelcomeTextLayer {
-    id: string;
-    /** Nombre de la capa en el editor. No lo usa el bot. */
-    label: string;
-    /** Puede incluir variables: {user}, {username}, {server}, {count}. */
-    content: string;
-    /** Punto de anclaje: x depende de `align`, y es siempre el centro vertical. */
-    x: number;
-    y: number;
-    align: TextAlign;
-    fontFamily: string;
-    fontSize: number;
-    fontWeight: number;
-    italic: boolean;
-    uppercase: boolean;
-    color: string;
-    opacity: number;
-    letterSpacing: number;
-    /** Multiplicador del alto de línea (1.2 = 120% del tamaño de fuente). */
-    lineHeight: number;
-    /** Si el texto es más ancho, se achica la fuente hasta entrar. null = sin límite. */
-    maxWidth: number | null;
-    strokeWidth: number;
-    strokeColor: string;
-    shadowBlur: number;
-    shadowOffsetX: number;
-    shadowOffsetY: number;
-    shadowColor: string;
-}
-
-export interface WelcomeCardConfig {
-    version: number;
-    canvas: WelcomeCanvas;
-    background: WelcomeBackground;
-    avatar: WelcomeAvatar;
-    texts: WelcomeTextLayer[];
-}
+export type WelcomeCanvas = CardCanvas;
+export type WelcomeBackground = CardBackground;
+export type WelcomeAvatar = CardAvatar;
+/** Igual que la capa base; sus variables son {user}, {username}, {server}, {count}. */
+export type WelcomeTextLayer = CardTextLayer;
+export type WelcomeCardConfig = BaseCardConfig;
 
 /** El objeto completo que viaja a la API y se persiste. */
 export interface WelcomeCardSetup {
@@ -109,33 +68,6 @@ export interface WelcomeCardSample {
     serverName: string;
     memberCount: number;
     avatarUrl: string;
-}
-
-export type SelectionTarget =
-    | { kind: "avatar" }
-    | { kind: "text"; id: string };
-
-export interface HitBox {
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-}
-
-export interface LayerHit {
-    target: SelectionTarget;
-    box: HitBox;
-}
-
-export interface RenderImages {
-    background: CanvasImageSource | null;
-    avatar: CanvasImageSource | null;
-}
-
-export interface RenderOptions {
-    /** Dibuja el marco de selección. El bot nunca pasa esto. */
-    selection?: SelectionTarget | null;
-    guides?: { vertical: boolean; horizontal: boolean };
 }
 
 /* ---------- props de los componentes del editor ---------- */

@@ -3,65 +3,57 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import {
+    BirthdayAvatar,
+    BirthdayBackground,
+    BirthdayCanvas,
+    BirthdayCardConfig,
+    BirthdayCardSample,
+    BirthdayCardSetup,
+    BirthdayDecoration,
+    BirthdayTextLayer,
     RenderImages,
     SelectionTarget,
-    WelcomeAvatar,
-    WelcomeBackground,
-    WelcomeCanvas,
-    WelcomeCardConfig,
-    WelcomeCardSample,
-    WelcomeCardSetup,
-    WelcomeTextLayer,
-} from "@/types/WelcomeCard";
+} from "@/types/BirthdayCard";
 import {
-    DEFAULT_SAMPLE,
-    TEMPLATE_VARIABLES,
-    WELCOME_TEMPLATES,
+    BIRTHDAY_TEMPLATES,
+    DEFAULT_BIRTHDAY_SAMPLE,
     createDefaultConfig,
     createTextLayer,
-    fetchWelcomeCard,
+    fetchBirthdayCard,
+    formatBirthdayDate,
     loadEditorImage,
     newLayerId,
-    saveWelcomeCard,
-} from "@/lib/welcomeCard";
-import WelcomeCardCanvas from "./WelcomeCardCanvas";
-import WelcomeCardInspector from "./WelcomeCardInspector";
-import ChannelDropdown from "./ChannelDropdown";
+    saveBirthdayCard,
+} from "@/lib/birthdayCard";
+import BirthdayCardCanvas from "@/Components/birthday/BirthdayCardCanvas";
+import BirthdayCardInspector from "@/Components/birthday/BirthdayCardInspector";
 import { DiscordChannel } from "@/types/DiscordTypes";
 import { normalizeImageUrl } from "@/lib/imageUrl";
-import DiscordRefreshButton from "./DiscordRefreshButton";
 
 /** Lo que realmente se persiste, serializado, para saber si hay cambios sin guardar. */
-function snapshot(setup: Omit<WelcomeCardSetup, "id" | "serverId">) {
-    return JSON.stringify({
-        enabled: setup.enabled,
-        channelId: setup.channelId,
-        messageContent: setup.messageContent,
-        config: setup.config,
-    });
+function snapshot(setup: Omit<BirthdayCardSetup, "id" | "serverId">) {
+    return JSON.stringify({ enabled: setup.enabled, config: setup.config });
 }
 
-export default function WelcomeCardEditor() {
+export default function BirthdayCardEditor({ channelId }: { channelId: string | null }) {
     const params = useParams();
     const idServer = (params?.server as string) || "";
 
-    const [config, setConfig] = useState<WelcomeCardConfig>(() => createDefaultConfig());
-    const [sample, setSample] = useState<WelcomeCardSample>(DEFAULT_SAMPLE);
+    const [config, setConfig] = useState<BirthdayCardConfig>(() => createDefaultConfig());
+    const [sample, setSample] = useState<BirthdayCardSample>(DEFAULT_BIRTHDAY_SAMPLE);
     const [selection, setSelection] = useState<SelectionTarget | null>(null);
 
     const [rowId, setRowId] = useState<string | null>(null);
     const [enabled, setEnabled] = useState<boolean>(true);
-    const [channelId, setChannelId] = useState<string | null>(null);
-    const [messageContent, setMessageContent] = useState<string>("¡Bienvenido {mention}! 🎉");
 
     // Guardamos la imagen junto a la URL que la produjo: así, mientras carga una
     // nueva, no se sigue dibujando la anterior.
     const [loadedBackground, setLoadedBackground] = useState<{ url: string; img: HTMLImageElement } | null>(null);
     const [loadedAvatar, setLoadedAvatar] = useState<{ url: string; img: HTMLImageElement } | null>(null);
 
+    // Solo para el cartel de "se publica en #canal": el canal ya está elegido en la
+    // configuración de cumpleaños, acá no se toca.
     const [channels, setChannels] = useState<DiscordChannel[]>([]);
-    const [loadingChannels, setLoadingChannels] = useState<boolean>(true);
-    const [channelsError, setChannelsError] = useState<string | null>(null);
 
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [isSaving, setIsSaving] = useState<boolean>(false);
@@ -78,7 +70,7 @@ export default function WelcomeCardEditor() {
 
         const controller = new AbortController();
 
-        fetchWelcomeCard(idServer, controller.signal).then((res) => {
+        fetchBirthdayCard(idServer, controller.signal).then((res) => {
             if (controller.signal.aborted) return;
 
             if (res.apiMissing) {
@@ -92,8 +84,6 @@ export default function WelcomeCardEditor() {
             } else if (res.setup) {
                 setRowId(res.setup.id ?? null);
                 setEnabled(res.setup.enabled);
-                setChannelId(res.setup.channelId);
-                setMessageContent(res.setup.messageContent);
                 setConfig(res.setup.config);
                 savedRef.current = snapshot(res.setup);
             }
@@ -108,58 +98,30 @@ export default function WelcomeCardEditor() {
         return () => controller.abort();
     }, [idServer]);
 
-    /* ---------------- canales del servidor ---------------- */
-
-    const loadChannels = useCallback(async (signal: AbortSignal) => {
-        // Mantiene los cambios de estado fuera del cuerpo síncrono del effect inicial.
-        await Promise.resolve();
-        if (signal.aborted) return;
-
-        setLoadingChannels(true);
-        setChannelsError(null);
-
-        try {
-            const res = await fetch(`/api/guilds/${idServer}/channels`, {
-                signal,
-                cache: "no-store",
-            });
-            const data = await res.json().catch(() => ({}));
-
-            if (!res.ok) {
-                throw new Error(
-                    res.status === 429
-                        ? "Discord alcanzó el límite de solicitudes. Esperá unos segundos y volvé a actualizar."
-                        : data.error || `No se pudieron cargar los canales (error ${res.status}).`
-                );
-            }
-
-            if (!signal.aborted) setChannels(data.channels || []);
-        } catch (err) {
-            if (signal.aborted) return;
-            console.error("Error al obtener los canales:", err);
-            setChannelsError(
-                err instanceof Error ? err.message : "No se pudieron cargar los canales del servidor."
-            );
-        } finally {
-            if (!signal.aborted) setLoadingChannels(false);
-        }
-    }, [idServer]);
+    /* ---------------- canal donde publica el bot ---------------- */
 
     useEffect(() => {
         if (!idServer) return;
 
         const controller = new AbortController();
-        // Los setState de loadChannels ocurren después de un await, no durante el effect.
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        void loadChannels(controller.signal);
+
+        fetch(`/api/guilds/${idServer}/channels`, { signal: controller.signal })
+            .then(async (res) => {
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || `Error ${res.status}`);
+                return data;
+            })
+            .then((data) => {
+                if (!controller.signal.aborted) setChannels(data.channels || []);
+            })
+            .catch((err) => {
+                if (controller.signal.aborted) return;
+                // No es crítico: sin esto solo se pierde el cartel informativo.
+                console.error("Error al obtener los canales:", err);
+            });
 
         return () => controller.abort();
-    }, [idServer, loadChannels]);
-
-    const refreshChannels = () => {
-        const controller = new AbortController();
-        void loadChannels(controller.signal);
-    };
+    }, [idServer]);
 
     /* ---------------- imágenes del lienzo ---------------- */
 
@@ -228,22 +190,27 @@ export default function WelcomeCardEditor() {
         setFeedback(null);
     }, []);
 
-    const patchCanvas = (patch: Partial<WelcomeCanvas>) => {
+    const patchCanvas = (patch: Partial<BirthdayCanvas>) => {
         setConfig((prev) => ({ ...prev, canvas: { ...prev.canvas, ...patch } }));
         markDirty();
     };
 
-    const patchBackground = (patch: Partial<WelcomeBackground>) => {
+    const patchBackground = (patch: Partial<BirthdayBackground>) => {
         setConfig((prev) => ({ ...prev, background: { ...prev.background, ...patch } }));
         markDirty();
     };
 
-    const patchAvatar = (patch: Partial<WelcomeAvatar>) => {
+    const patchDecoration = (patch: Partial<BirthdayDecoration>) => {
+        setConfig((prev) => ({ ...prev, decoration: { ...prev.decoration, ...patch } }));
+        markDirty();
+    };
+
+    const patchAvatar = (patch: Partial<BirthdayAvatar>) => {
         setConfig((prev) => ({ ...prev, avatar: { ...prev.avatar, ...patch } }));
         markDirty();
     };
 
-    const patchText = (id: string, patch: Partial<WelcomeTextLayer>) => {
+    const patchText = (id: string, patch: Partial<BirthdayTextLayer>) => {
         setConfig((prev) => ({
             ...prev,
             texts: prev.texts.map((t) => (t.id === id ? { ...t, ...patch } : t)),
@@ -272,7 +239,7 @@ export default function WelcomeCardEditor() {
         const source = config.texts.find((t) => t.id === id);
         if (!source) return;
 
-        const copy: WelcomeTextLayer = {
+        const copy: BirthdayTextLayer = {
             ...source,
             id: newLayerId(),
             label: `${source.label} (copia)`,
@@ -303,7 +270,7 @@ export default function WelcomeCardEditor() {
         markDirty();
     };
 
-    const applyTemplate = (build: () => WelcomeCardConfig) => {
+    const applyTemplate = (build: () => BirthdayCardConfig) => {
         setConfig(build());
         setSelection(null);
         markDirty();
@@ -311,12 +278,10 @@ export default function WelcomeCardEditor() {
 
     /* ---------------- guardar / exportar ---------------- */
 
-    const currentSetup = (): WelcomeCardSetup => ({
+    const currentSetup = (): BirthdayCardSetup => ({
         id: rowId,
         serverId: idServer,
         enabled,
-        channelId,
-        messageContent,
         config,
     });
 
@@ -326,17 +291,11 @@ export default function WelcomeCardEditor() {
             return;
         }
 
-        // Sin canal el bot no tiene dónde publicar; solo importa si está activada.
-        if (enabled && !channelId) {
-            setFeedback({ type: "error", text: "Elegí el canal donde se publica la bienvenida." });
-            return;
-        }
-
         setIsSaving(true);
         setFeedback(null);
 
         const setup = currentSetup();
-        const result = await saveWelcomeCard(setup);
+        const result = await saveBirthdayCard(setup);
 
         if (result.ok) {
             if (result.id) setRowId(result.id);
@@ -349,7 +308,7 @@ export default function WelcomeCardEditor() {
             setFeedback({
                 type: result.apiMissing ? "info" : "error",
                 text: result.apiMissing
-                    ? "Todavía no existe POST/PUT /api/v1/joinServer/setup-card en el backend. Usá \"Copiar JSON\" mientras tanto."
+                    ? "Todavía no existe POST/PUT /api/v1/birthday/setup-card en el backend. Usá \"Copiar JSON\" mientras tanto."
                     : result.message,
             });
         }
@@ -373,8 +332,6 @@ export default function WelcomeCardEditor() {
             const saved = JSON.parse(savedRef.current);
             setConfig(saved.config);
             setEnabled(saved.enabled);
-            setChannelId(saved.channelId);
-            setMessageContent(saved.messageContent);
         }
         setSelection(null);
         setDirty(false);
@@ -387,10 +344,12 @@ export default function WelcomeCardEditor() {
         return (
             <div className="flex flex-col items-center justify-center space-y-3 py-16 text-zinc-400">
                 <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#5865F2] border-t-transparent"></div>
-                <p className="text-sm font-medium">Cargando el editor de bienvenida...</p>
+                <p className="text-sm font-medium">Cargando el editor de cumpleaños...</p>
             </div>
         );
     }
+
+    const canalDestino = channels.find((c) => c.id === channelId);
 
     return (
         <div className="my-6 space-y-4">
@@ -401,29 +360,31 @@ export default function WelcomeCardEditor() {
                         type="button"
                         role="switch"
                         aria-checked={enabled}
-                        aria-label="Activar la bienvenida"
+                        aria-label="Activar la imagen de cumpleaños"
                         onClick={() => {
                             setEnabled(!enabled);
                             markDirty();
                         }}
-                        className={`relative h-6 w-11 shrink-0 rounded-full transition-colors cursor-pointer ${enabled ? "bg-emerald-500" : "bg-zinc-600"
-                            }`}
+                        className={`relative h-6 w-11 shrink-0 rounded-full transition-colors cursor-pointer ${
+                            enabled ? "bg-emerald-500" : "bg-zinc-600"
+                        }`}
                     >
                         {/* left-0.5 explícito: sin él el knob nace centrado (los button
                             traen text-align: center) y se sale del riel al desplazarse. */}
                         <span
-                            className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white transition-transform ${enabled ? "translate-x-5" : "translate-x-0"
-                                }`}
+                            className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white transition-transform ${
+                                enabled ? "translate-x-5" : "translate-x-0"
+                            }`}
                         />
                     </button>
                     <div>
                         <p className="text-sm font-semibold text-white">
-                            {enabled ? "Bienvenida activada" : "Bienvenida desactivada"}
+                            {enabled ? "Imagen activada" : "Imagen desactivada"}
                         </p>
                         <p className="text-[11px] text-zinc-400">
                             {enabled
-                                ? "El bot va a publicar esta imagen cuando entre alguien."
-                                : "El diseño se guarda, pero el bot no publica nada."}
+                                ? "El mensaje de cumpleaños va a salir con esta imagen adjunta."
+                                : "El diseño se guarda, pero el bot manda solo el mensaje de texto."}
                         </p>
                     </div>
                 </div>
@@ -466,21 +427,22 @@ export default function WelcomeCardEditor() {
 
             {feedback && (
                 <div
-                    className={`rounded-xl border p-3.5 text-sm ${feedback.type === "success"
-                        ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-400"
-                        : feedback.type === "info"
-                            ? "border-amber-500/20 bg-amber-500/10 text-amber-300"
-                            : "border-red-500/20 bg-red-500/10 text-red-400"
-                        }`}
+                    className={`rounded-xl border p-3.5 text-sm ${
+                        feedback.type === "success"
+                            ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-400"
+                            : feedback.type === "info"
+                              ? "border-amber-500/20 bg-amber-500/10 text-amber-300"
+                              : "border-red-500/20 bg-red-500/10 text-red-400"
+                    }`}
                 >
                     {feedback.type === "success" ? "✅" : feedback.type === "info" ? "ℹ️" : "⚠️"} {feedback.text}
                 </div>
             )}
 
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
-                {/* Columna izquierda: lienzo, capas, datos de prueba */}
+                {/* Columna izquierda: lienzo, plantillas, capas, datos de prueba */}
                 <div className="space-y-4">
-                    <WelcomeCardCanvas
+                    <BirthdayCardCanvas
                         config={config}
                         sample={sample}
                         images={images}
@@ -492,7 +454,7 @@ export default function WelcomeCardEditor() {
                     {/* Plantillas */}
                     <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-white/10 bg-[#1e1f22] p-3">
                         <span className="text-[11px] font-bold uppercase tracking-wider text-zinc-500">Plantillas</span>
-                        {WELCOME_TEMPLATES.map((tpl) => (
+                        {BIRTHDAY_TEMPLATES.map((tpl) => (
                             <button
                                 key={tpl.name}
                                 type="button"
@@ -520,10 +482,11 @@ export default function WelcomeCardEditor() {
                         <button
                             type="button"
                             onClick={() => setSelection({ kind: "avatar" })}
-                            className={`flex w-full items-center gap-2.5 rounded-xl border px-3 py-2 text-left transition-colors cursor-pointer ${selection?.kind === "avatar"
-                                ? "border-[#5865F2] bg-[#5865F2]/10"
-                                : "border-white/10 bg-[#111214] hover:border-white/20"
-                                }`}
+                            className={`flex w-full items-center gap-2.5 rounded-xl border px-3 py-2 text-left transition-colors cursor-pointer ${
+                                selection?.kind === "avatar"
+                                    ? "border-[#5865F2] bg-[#5865F2]/10"
+                                    : "border-white/10 bg-[#111214] hover:border-white/20"
+                            }`}
                         >
                             <span className="text-sm">🖼️</span>
                             <span className="flex-1 truncate text-xs font-medium text-white">Avatar</span>
@@ -535,8 +498,9 @@ export default function WelcomeCardEditor() {
                             return (
                                 <div
                                     key={layer.id}
-                                    className={`flex items-center gap-1.5 rounded-xl border px-3 py-2 transition-colors ${isSelected ? "border-[#5865F2] bg-[#5865F2]/10" : "border-white/10 bg-[#111214]"
-                                        }`}
+                                    className={`flex items-center gap-1.5 rounded-xl border px-3 py-2 transition-colors ${
+                                        isSelected ? "border-[#5865F2] bg-[#5865F2]/10" : "border-white/10 bg-[#111214]"
+                                    }`}
                                 >
                                     <button
                                         type="button"
@@ -579,72 +543,32 @@ export default function WelcomeCardEditor() {
                         })}
                     </div>
 
-                    {/* Canal de destino y mensaje que acompaña a la imagen */}
+                    {/* Dónde se publica: acá no se elige, ya está en la config de cumpleaños */}
                     <div className="space-y-2 rounded-2xl border border-white/10 bg-[#1e1f22] p-4">
-                        <h3 className="text-[11px] font-bold uppercase tracking-wider text-zinc-500">
-                            Canal de bienvenida <span className="text-red-400">*</span>
-                        </h3>
-                        <div className="flex items-start gap-2">
-                            <div className="min-w-0 flex-1">
-                                <ChannelDropdown
-                                    channels={channels}
-                                    value={channelId}
-                                    onChange={(id) => {
-                                        setChannelId(id);
-                                        markDirty();
-                                    }}
-                                    disabled={isSaving}
-                                    loading={loadingChannels}
-                                    error={channelsError}
-                                />
-                            </div>
-                            <DiscordRefreshButton
-                                resource="canales"
-                                loading={loadingChannels}
-                                disabled={isSaving || loadingChannels || !idServer}
-                                onRefresh={refreshChannels}
-                            />
-                        </div>
-                        {!loadingChannels && !channelsError && channels.length === 0 && (
-                            <p className="text-[10px] leading-relaxed text-amber-400">
-                                El bot no ve ningún canal de texto en este servidor.
+                        <h3 className="text-[11px] font-bold uppercase tracking-wider text-zinc-500">Dónde se publica</h3>
+
+                        {channelId ? (
+                            <p className="text-xs leading-relaxed text-zinc-300">
+                                La imagen se adjunta al mensaje de cumpleaños, en{" "}
+                                <span className="rounded bg-[#111214] px-1.5 py-0.5 font-mono text-[#5865F2]">
+                                    #{canalDestino?.name || channelId}
+                                </span>
+                                . Ese canal ya está guardado en la configuración de cumpleaños del servidor, y el
+                                texto se edita en la pestaña <strong className="text-zinc-200">Mensaje</strong>.
                             </p>
-                        )}
-                        {channels.some((c) => !c.canSend) && (
-                            <p className="text-[10px] leading-relaxed text-zinc-500">
-                                Los canales en gris están deshabilitados: al bot le falta ver el canal, escribir
-                                o adjuntar archivos.
+                        ) : (
+                            <p className="text-xs leading-relaxed text-amber-400">
+                                No se pudo leer el canal de la configuración de cumpleaños. Volvé a entrar desde el
+                                panel: sin canal el bot no tiene dónde publicar.
                             </p>
                         )}
 
-                        <h3 className="pt-2 text-[11px] font-bold uppercase tracking-wider text-zinc-500">
-                            Mensaje del canal
-                        </h3>
-                        <textarea
-                            value={messageContent}
-                            onChange={(e) => {
-                                setMessageContent(e.target.value);
-                                markDirty();
-                            }}
-                            rows={2}
-                            maxLength={500}
-                            placeholder="¡Bienvenido {mention}!"
-                            className="w-full resize-y rounded-xl border border-white/10 bg-[#111214] px-3 py-2 text-sm text-white placeholder-zinc-600 focus:border-[#5865F2] focus:outline-none"
-                        />
-                        <div className="flex flex-wrap gap-1.5">
-                            {TEMPLATE_VARIABLES.map((v) => (
-                                <span
-                                    key={v.token}
-                                    title={v.description}
-                                    className="rounded-md border border-white/10 bg-[#111214] px-1.5 py-0.5 font-mono text-[10px] text-zinc-400"
-                                >
-                                    {v.token}
-                                </span>
-                            ))}
-                        </div>
-                        <p className="text-[10px] leading-relaxed text-zinc-500">
-                            Este texto acompaña a la imagen. Dejalo vacío si querés que el bot publique solo la imagen.
-                        </p>
+                        {canalDestino && !canalDestino.canSend && (
+                            <p className="text-[10px] leading-relaxed text-amber-400">
+                                Al bot le faltan permisos en ese canal (ver el canal, escribir o adjuntar archivos).
+                                Sin <strong>Adjuntar archivos</strong> el mensaje va a salir sin la imagen.
+                            </p>
+                        )}
                     </div>
 
                     {/* Datos de prueba */}
@@ -676,10 +600,20 @@ export default function WelcomeCardEditor() {
                             />
                             <input
                                 type="number"
-                                value={sample.memberCount}
-                                onChange={(e) => setSample({ ...sample, memberCount: Number(e.target.value) })}
-                                placeholder="Miembros"
-                                className="rounded-lg border border-white/10 bg-[#111214] px-2.5 py-1.5 text-xs text-white focus:border-[#5865F2] focus:outline-none"
+                                value={sample.age ?? ""}
+                                disabled={sample.age === null}
+                                onChange={(e) =>
+                                    setSample({ ...sample, age: e.target.value === "" ? null : Number(e.target.value) })
+                                }
+                                placeholder="Edad"
+                                className="rounded-lg border border-white/10 bg-[#111214] px-2.5 py-1.5 text-xs text-white focus:border-[#5865F2] focus:outline-none disabled:opacity-40"
+                            />
+                            <input
+                                type="text"
+                                value={sample.date}
+                                onChange={(e) => setSample({ ...sample, date: e.target.value })}
+                                placeholder={`Fecha (por defecto, hoy: ${formatBirthdayDate(new Date())})`}
+                                className="sm:col-span-2 rounded-lg border border-white/10 bg-[#111214] px-2.5 py-1.5 text-xs text-white focus:border-[#5865F2] focus:outline-none"
                             />
                             <input
                                 type="url"
@@ -689,16 +623,29 @@ export default function WelcomeCardEditor() {
                                 className="sm:col-span-2 rounded-lg border border-white/10 bg-[#111214] px-2.5 py-1.5 text-xs text-white focus:border-[#5865F2] focus:outline-none"
                             />
                         </div>
+
+                        {/* No todos cargan el año al registrarse: el diseño tiene que
+                            aguantar que $edad venga vacío. */}
+                        <label className="flex items-center gap-2 text-[11px] text-zinc-400 cursor-pointer">
+                            <input
+                                type="checkbox"
+                                checked={sample.age === null}
+                                onChange={(e) => setSample({ ...sample, age: e.target.checked ? null : 24 })}
+                                className="accent-[#5865F2] cursor-pointer"
+                            />
+                            Probar sin año de nacimiento ($edad queda vacío)
+                        </label>
                     </div>
                 </div>
 
                 {/* Columna derecha: propiedades */}
                 <div className="lg:sticky lg:top-4 lg:self-start lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto">
-                    <WelcomeCardInspector
+                    <BirthdayCardInspector
                         config={config}
                         selection={selection}
                         onCanvasChange={patchCanvas}
                         onBackgroundChange={patchBackground}
+                        onDecorationChange={patchDecoration}
                         onAvatarChange={patchAvatar}
                         onTextChange={patchText}
                         onTextDelete={deleteText}
@@ -711,9 +658,9 @@ export default function WelcomeCardEditor() {
                     <p className="mb-1 font-semibold text-zinc-300">Falta el backend</p>
                     <p>
                         El editor ya arma el objeto completo. Cuando exista{" "}
-                        <code className="font-mono text-[#5865F2]">/api/v1/joinServer/setup-card</code> (GET, POST y PUT),
-                        el botón &quot;Guardar diseño&quot; funciona sin tocar nada más. La forma exacta de la tabla y
-                        de cada endpoint está en <code className="font-mono text-zinc-300">docs/welcome-card.md</code>.
+                        <code className="font-mono text-[#5865F2]">/api/v1/birthday/setup-card</code> (GET, POST y PUT),
+                        el botón &quot;Guardar diseño&quot; funciona sin tocar nada más. La forma exacta de la colección
+                        y de cada endpoint está en <code className="font-mono text-zinc-300">docs/birthday-card.md</code>.
                     </p>
                 </div>
             )}

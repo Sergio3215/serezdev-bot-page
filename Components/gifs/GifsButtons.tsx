@@ -1,8 +1,8 @@
 "use client"
 
 import { gifButtons } from "@/types/Elements";
-import ButtonDanger from "./ButtonDanger";
-import ButtonDiscord from "./ButtonDiscord";
+import ButtonDanger from "@/Components/ui/ButtonDanger";
+import ButtonDiscord from "@/Components/ui/ButtonDiscord";
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 

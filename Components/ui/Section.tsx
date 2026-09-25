@@ -1,4 +1,4 @@
-import { SectionsType } from "../types/Elements"
+import { SectionsType } from "@/types/Elements"
 
 export default function Section({ title, children }: SectionsType) {
 

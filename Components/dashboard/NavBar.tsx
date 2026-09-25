@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { currentUser } from "../types/DiscordTypes";
+import { currentUser } from "@/types/DiscordTypes";
 
 export default function NavBar({ user, displayName, handleLogout, loggingOut, getAvatarUrl }: currentUser) {
     return (

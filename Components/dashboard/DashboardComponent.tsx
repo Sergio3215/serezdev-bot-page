@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { DiscordGuild, serverList } from "../types/DiscordTypes"
+import { DiscordGuild, serverList } from "@/types/DiscordTypes"
 
 export default function DashboardComponent({ searchQuery, setSearchQuery, filteredGuilds, loadingGuilds, getGuildIconUrl, getInitials }: serverList) {
     return (

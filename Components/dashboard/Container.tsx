@@ -2,13 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import NavBar from "@/Components/NavBar";
-import DashboardComponent from "@/Components/DashboardComponent";
+import NavBar from "@/Components/dashboard/NavBar";
+import DashboardComponent from "@/Components/dashboard/DashboardComponent";
 
-import { DiscordGuild, DiscordUser } from "../types/DiscordTypes";
-import ServerDashboard from "./ServerDashboard";
+import { DiscordGuild, DiscordUser } from "@/types/DiscordTypes";
+import ServerDashboard from "@/Components/dashboard/ServerDashboard";
 
-import { ContainerProps } from "../types/Elements"
+import { ContainerProps } from "@/types/Elements"
 
 
 export default function Container({ children, site }: ContainerProps) {

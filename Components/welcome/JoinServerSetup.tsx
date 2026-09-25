@@ -4,9 +4,9 @@ import { joinServerType } from "@/types/Elements";
 import { DiscordRole } from "@/types/DiscordTypes";
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import RoleDropdown from "./RoleDropdown";
-import WelcomeCardEditor from "./WelcomeCardEditor";
-import DiscordRefreshButton from "./DiscordRefreshButton";
+import RoleDropdown from "@/Components/ui/RoleDropdown";
+import WelcomeCardEditor from "@/Components/welcome/WelcomeCardEditor";
+import DiscordRefreshButton from "@/Components/ui/DiscordRefreshButton";
 
 const API_URL = `${process.env.NEXT_PUBLIC_URL || "https://server-serez-dev-bot-production.up.railway.app"}/api/v1/joinServer/setup`;
 

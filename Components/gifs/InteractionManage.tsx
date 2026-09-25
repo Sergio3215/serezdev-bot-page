@@ -3,8 +3,8 @@
 import { InteractionDataType, interactionManage, InteractionName } from "@/types/Elements";
 import { useParams } from "next/navigation";
 import { useEffect, useState, useCallback } from "react";
-import AddGifs from "./AddGifs";
-import GifButtons from "./GifsButtons";
+import AddGifs from "@/Components/gifs/AddGifs";
+import GifButtons from "@/Components/gifs/GifsButtons";
 
 
 export default function InteractionManage({ newFlag, setNewFlag }: interactionManage) {
@@ -101,7 +101,7 @@ export default function InteractionManage({ newFlag, setNewFlag }: interactionMa
                                     <div className="flex flex-wrap gap-4 my-4">
                                         {
                                             g.gifs.map((gg, index) => {
-                                                const isDefault = gg.url.includes("git");
+                                                // const isDefault = gg.url.includes("git");
                                                 return (
                                                     <div
                                                         key={gg.id || index}
@@ -112,11 +112,12 @@ export default function InteractionManage({ newFlag, setNewFlag }: interactionMa
                                                             <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-md bg-white/5 border border-white/10 text-zinc-300">
                                                                 #{gg.order}
                                                             </span>
-                                                            {isDefault ? (
+                                                            {gg.type == "default" && (
                                                                 <span className="text-[10px] font-medium text-zinc-500 bg-zinc-800/80 px-2 py-0.5 rounded">
                                                                     Default
                                                                 </span>
-                                                            ) : (
+                                                            )}
+                                                            {gg.type == "custom" && (
                                                                 <span className="text-[10px] font-medium text-indigo-300 bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/20">
                                                                     Personalizado
                                                                 </span>

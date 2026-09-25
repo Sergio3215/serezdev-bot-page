@@ -4,9 +4,9 @@ import { serverSelect } from "@/types/DiscordTypes";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useState } from "react";
-import Section from "./Section";
-import ManageSetting from "./ManageSettings";
-import ButtonDiscord from "./ButtonDiscord";
+import Section from "@/Components/ui/Section";
+import ManageSetting from "@/Components/dashboard/ManageSettings";
+import ButtonDiscord from "@/Components/ui/ButtonDiscord";
 
 export default function ServerDashboard({ filteredGuilds }: serverSelect) {
     const params = useParams();

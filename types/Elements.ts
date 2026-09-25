@@ -22,6 +22,7 @@ export interface GifDataType {
     serverId: string;
     url: string;
     interactionId: string;
+    type: string;
 }
 
 export interface InteractionDataType {

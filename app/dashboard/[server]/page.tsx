@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import Container from "@/Components/Container";
+import Container from "@/Components/dashboard/Container";
 import { checkGuildAdmin } from "@/lib/guildAccess";
 
 export default async function Server({ params }: { params: Promise<{ server: string }> }) {
