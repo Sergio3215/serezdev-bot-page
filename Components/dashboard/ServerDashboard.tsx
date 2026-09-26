@@ -4,13 +4,23 @@ import { serverSelect } from "@/types/DiscordTypes";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useState } from "react";
+import { useServerPlan } from "@/lib/useServerPlan";
 import Section from "@/Components/ui/Section";
 import ManageSetting from "@/Components/dashboard/ManageSettings";
 import ButtonDiscord from "@/Components/ui/ButtonDiscord";
+import type { PlanId } from "@/types/Billing";
+
+const PLAN_BADGE: Record<PlanId, string> = {
+    free: "border-white/15 bg-white/5 text-zinc-300",
+    pro: "border-[#5865F2]/40 bg-[#5865F2]/15 text-[#aab1ff]",
+    premium: "border-amber-500/40 bg-amber-500/15 text-amber-300",
+};
 
 export default function ServerDashboard({ filteredGuilds }: serverSelect) {
     const params = useParams();
     const idServer = (params?.server as string) || "";
+
+    const plan = useServerPlan(idServer);
 
     const [isResetting, setIsResetting] = useState(false);
     const [statusMessage, setStatusMessage] = useState<{ text: string; isError: boolean } | null>(null);
@@ -30,14 +40,13 @@ export default function ServerDashboard({ filteredGuilds }: serverSelect) {
             const data = await res.json();
             if (res.ok) {
                 setStatusMessage({ text: "¡Bot reiniciado con éxito!", isError: false });
+                setIsResetting(false);
             } else {
                 setStatusMessage({ text: data.error || "Error al reiniciar el bot.", isError: true });
             }
         } catch (err) {
             console.error("Error al reiniciar bot:", err);
             setStatusMessage({ text: "Error de conexión al solicitar el reinicio.", isError: true });
-        } finally {
-            setIsResetting(false);
         }
     };
 
@@ -75,11 +84,31 @@ export default function ServerDashboard({ filteredGuilds }: serverSelect) {
                             return (
                                 <div key={ser.id} className="space-y-6">
                                     <div>
-                                        <h1 className="text-3xl font-bold tracking-tight text-white mb-2">{ser.name}</h1>
+                                        <div className="flex flex-wrap items-center justify-between gap-3">
+                                            <div className="flex items-center gap-3">
+                                                <h1 className="text-3xl font-bold tracking-tight text-white">{ser.name}</h1>
+                                                {plan && (
+                                                    <span className={`rounded-full border px-2.5 py-0.5 text-[11px] font-semibold capitalize ${PLAN_BADGE[plan]}`}>
+                                                        {plan}
+                                                    </span>
+                                                )}
+                                            </div>
+                                            {state == "" && (
+                                                <button
+                                                    onClick={() => {
+                                                        setState("billing");
+                                                        setTitle("Gestionar mi plan")
+                                                    }}
+                                                    className="rounded-lg border border-white/15 bg-white/5 px-3.5 py-2 text-xs font-semibold text-zinc-200 transition-colors hover:bg-white/10 cursor-pointer"
+                                                >
+                                                    Gestionar mi plan
+                                                </button>
+                                            )}
+                                        </div>
                                         <hr className="mt-4 border-white/10" />
                                     </div>
                                     <div className="flex flex-col">
-                                        <div className="flex flex-row flex-wrap gap-6 justify-center items-center">
+                                        <div className="flex flex-row flex-wrap gap-6 justify-center items-start">
                                             {
                                                 state == "" && (
                                                     <>
@@ -100,33 +129,34 @@ export default function ServerDashboard({ filteredGuilds }: serverSelect) {
                                                                 setTitle("Administrador de Interacciones")
                                                             }} title={`Administrar &rarr;`} />
                                                         </Section>
-                                                        <Section title="Reiniciar el Bot">
-                                                            <button
-                                                                onClick={resetBot}
-                                                                disabled={isResetting}
-                                                                className="inline-flex items-center gap-2 rounded-xl bg-[#6e0a0a] shadow-[#bd2e2e]/20 hover:bg-[#bd2e2e] px-6 py-4 text-xs font-semibold text-white shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed mb-2 cursor-pointer"
-                                                            >
-                                                                {isResetting ? (
-                                                                    <>
-                                                                        <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
-                                                                        <span>Reiniciando bot...</span>
-                                                                    </>
-                                                                ) : (
-                                                                    <span>Reiniciar Bot</span>
-                                                                )}
-                                                            </button>
-                                                        </Section>
-
-                                                        {statusMessage && (
-                                                            <div
-                                                                className={`mt-4 rounded-xl p-3 text-xs border ${statusMessage.isError
-                                                                    ? "border-red-500/30 bg-red-500/10 text-red-300"
-                                                                    : "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
-                                                                    }`}
-                                                            >
-                                                                {statusMessage.text}
-                                                            </div>
-                                                        )}
+                                                        <div className="flex flex-col max-w-lg w-full items-center">
+                                                            <Section title="Reiniciar el Bot">
+                                                                <button
+                                                                    onClick={resetBot}
+                                                                    disabled={isResetting}
+                                                                    className="inline-flex items-center gap-2 rounded-xl bg-[#6e0a0a] shadow-[#bd2e2e]/20 hover:bg-[#bd2e2e] px-6 py-4 text-xs font-semibold text-white shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed mb-2 cursor-pointer"
+                                                                >
+                                                                    {isResetting ? (
+                                                                        <>
+                                                                            <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+                                                                            <span>Reiniciando bot...</span>
+                                                                        </>
+                                                                    ) : (
+                                                                        <span>Reiniciar Bot</span>
+                                                                    )}
+                                                                </button>
+                                                            </Section>
+                                                            {statusMessage && (
+                                                                <div
+                                                                    className={`mt-4 rounded-xl p-3 text-xs border ${statusMessage.isError
+                                                                        ? "border-red-500/30 bg-red-500/10 text-red-300"
+                                                                        : "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
+                                                                        }`}
+                                                                >
+                                                                    {statusMessage.text}
+                                                                </div>
+                                                            )}
+                                                        </div>
                                                     </>
                                                 )
                                             }

@@ -5,6 +5,7 @@ import ButtonDiscord from "@/Components/ui/ButtonDiscord";
 import { useState } from "react";
 import BirthdaySetup from "@/Components/birthday/BirthdaySetup";
 import JoinServerSetup from "@/Components/welcome/JoinServerSetup";
+import PricingPlans from "@/Components/billing/PricingPlans";
 
 export default function ManageSetting({ title, state, setState }: ManageSettingType) {
     const [newFlag, setNewFlag] = useState<boolean>(false);
@@ -43,6 +44,13 @@ export default function ManageSetting({ title, state, setState }: ManageSettingT
                     state === "joinServer" && (
                         <>
                             <JoinServerSetup />
+                        </>
+                    )
+                }
+                {
+                    state === "billing" && (
+                        <>
+                            <PricingPlans />
                         </>
                     )
                 }

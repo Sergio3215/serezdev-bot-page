@@ -1,8 +1,23 @@
 "use client"
 
-import { addGifsType } from "@/types/Elements";
+import { addGifsType, InteractionDataType } from "@/types/Elements";
 import { useState, useEffect } from "react";
 import { avisoParaFuente, normalizeImageUrl } from "@/lib/imageUrl";
+import { useServerPlan } from "@/lib/useServerPlan";
+import { FREE_CUSTOM_GIF_LIMIT } from "@/lib/plans";
+
+const API_URL = process.env.NEXT_PUBLIC_URL || "https://server-serez-dev-bot-production.up.railway.app";
+
+async function countCustomGifs(interactionNames: string[], serverId: string): Promise<number> {
+    const results = await Promise.all(
+        interactionNames.map((name) =>
+            fetch(`${API_URL}/api/v1/gif/getInteractionByName?name=${name}&serverId=${serverId}`)
+                .then((res) => res.json())
+                .then((res) => (res.data ?? []) as InteractionDataType[])
+        )
+    );
+    return results.flat().reduce((total, item) => total + item.gifs.filter((g) => g.type === "custom").length, 0);
+}
 
 export default function AddGifs({ interactions, idServer, goBack, defaultInteraction }: addGifsType) {
     const [url, setUrl] = useState<string>("");
@@ -10,7 +25,27 @@ export default function AddGifs({ interactions, idServer, goBack, defaultInterac
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [errorMsg, setErrorMsg] = useState("");
 
+    const plan = useServerPlan(idServer);
+    const [customCount, setCustomCount] = useState<number | null>(null);
+
     const avisoUrl = url.trim() ? avisoParaFuente(normalizeImageUrl(url).source) : null;
+
+    const isFree = plan === "free";
+    const limitReached = isFree && customCount !== null && customCount >= FREE_CUSTOM_GIF_LIMIT;
+    const checkingLimit = plan === null || (isFree && customCount === null);
+
+    useEffect(() => {
+        if (plan !== "free") return;
+        let cancelled = false;
+        countCustomGifs(interactions.map((i) => i.name), idServer)
+            .then((count) => {
+                if (!cancelled) setCustomCount(count);
+            })
+            .catch(() => {
+                if (!cancelled) setCustomCount(FREE_CUSTOM_GIF_LIMIT);
+            });
+        return () => { cancelled = true; };
+    }, [plan, interactions, idServer]);
 
     // Bloquear scroll de la página mientras el modal esté abierto y cerrar con Escape
     useEffect(() => {
@@ -33,6 +68,7 @@ export default function AddGifs({ interactions, idServer, goBack, defaultInterac
         const expression = /[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)/gi;
         const regex = new RegExp(expression);
 
+        if (checkingLimit || limitReached) return;
         if (interactionValue === "0" || interactionValue === undefined) {
             setErrorMsg("Por favor, selecciona una interacción.");
             return;
@@ -190,6 +226,17 @@ export default function AddGifs({ interactions, idServer, goBack, defaultInterac
                         </select>
                     </div>
 
+                    {isFree && customCount !== null && (
+                        <div className={`text-xs rounded-lg p-2.5 border ${limitReached
+                            ? "text-amber-300 bg-amber-500/10 border-amber-500/30"
+                            : "text-zinc-400 bg-white/5 border-white/10"
+                            }`}>
+                            {limitReached
+                                ? `Llegaste al límite de ${FREE_CUSTOM_GIF_LIMIT} GIFs personalizados del plan Free. Pasate a Pro para agregar más.`
+                                : `Plan Free: ${customCount} de ${FREE_CUSTOM_GIF_LIMIT} GIFs personalizados usados.`}
+                        </div>
+                    )}
+
                     {/* Mensaje de Error */}
                     {errorMsg && (
                         <div className="text-xs text-red-400 bg-red-500/10 border border-red-500/30 rounded-lg p-2.5">
@@ -209,7 +256,7 @@ export default function AddGifs({ interactions, idServer, goBack, defaultInterac
                         </button>
                         <button
                             type="submit"
-                            disabled={isSubmitting}
+                            disabled={isSubmitting || checkingLimit || limitReached}
                             className="px-5 py-2.5 rounded-xl text-xs font-semibold bg-[#5865F2] hover:bg-[#4752c4] text-white shadow-lg shadow-[#5865F2]/25 transition-all cursor-pointer disabled:opacity-50 flex items-center gap-2"
                         >
                             {isSubmitting ? (

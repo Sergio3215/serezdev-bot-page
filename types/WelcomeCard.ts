@@ -90,4 +90,6 @@ export interface welcomeInspectorType {
     onAvatarChange: (patch: Partial<WelcomeAvatar>) => void;
     onTextChange: (id: string, patch: Partial<WelcomeTextLayer>) => void;
     onTextDelete: (id: string) => void;
+    /** Plan Free: solo fondo de color. */
+    colorOnly?: boolean;
 }

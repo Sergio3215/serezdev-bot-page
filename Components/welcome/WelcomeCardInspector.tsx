@@ -88,7 +88,7 @@ function Segmented<T extends string>({
     onChange,
 }: {
     value: T;
-    options: { label: string; value: T }[];
+    options: { label: string; value: T; disabled?: boolean }[];
     onChange: (value: T) => void;
 }) {
     return (
@@ -97,8 +97,9 @@ function Segmented<T extends string>({
                 <button
                     key={opt.value}
                     type="button"
+                    disabled={opt.disabled}
                     onClick={() => onChange(opt.value)}
-                    className={`px-2.5 py-1 text-[11px] font-semibold rounded-md transition-colors cursor-pointer ${
+                    className={`px-2.5 py-1 text-[11px] font-semibold rounded-md transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-40 ${
                         value === opt.value ? "bg-[#5865F2] text-white" : "text-zinc-400 hover:text-white"
                     }`}
                 >
@@ -143,6 +144,7 @@ export default function WelcomeCardInspector({
     onAvatarChange,
     onTextChange,
     onTextDelete,
+    colorOnly = false,
 }: welcomeInspectorType) {
     const bg = config.background;
     const layer = selection?.kind === "text" ? config.texts.find((t) => t.id === selection.id) : undefined;
@@ -180,8 +182,8 @@ export default function WelcomeCardInspector({
                     onChange={(type) => onBackgroundChange({ type })}
                     options={[
                         { label: "Color", value: "color" },
-                        { label: "Degradado", value: "gradient" },
-                        { label: "Imagen", value: "image" },
+                        { label: colorOnly ? "Degradado (Pro)" : "Degradado", value: "gradient", disabled: colorOnly },
+                        { label: colorOnly ? "Imagen (Pro)" : "Imagen", value: "image", disabled: colorOnly },
                     ]}
                 />
 
@@ -191,8 +193,14 @@ export default function WelcomeCardInspector({
                     </Row>
                 )}
 
+                {colorOnly && bg.type !== "color" && (
+                    <p className="text-[10px] leading-relaxed text-amber-400">
+                        Degradado e imagen son del plan Pro. Con el plan Free podés cambiar a color.
+                    </p>
+                )}
+
                 {bg.type === "gradient" && (
-                    <>
+                    <fieldset disabled={colorOnly} className={colorOnly ? "space-y-3 opacity-40 pointer-events-none" : "space-y-3"}>
                         <Row label="Desde">
                             <ColorInput
                                 value={bg.gradient.from}
@@ -213,11 +221,11 @@ export default function WelcomeCardInspector({
                             suffix="°"
                             onChange={(angle) => onBackgroundChange({ gradient: { ...bg.gradient, angle } })}
                         />
-                    </>
+                    </fieldset>
                 )}
 
                 {bg.type === "image" && (
-                    <>
+                    <fieldset disabled={colorOnly} className={colorOnly ? "space-y-3 opacity-40 pointer-events-none" : "space-y-3"}>
                         <input
                             type="url"
                             value={bg.imageUrl || ""}
@@ -261,7 +269,7 @@ export default function WelcomeCardInspector({
                             suffix="px"
                             onChange={(blur) => onBackgroundChange({ blur })}
                         />
-                    </>
+                    </fieldset>
                 )}
 
                 <Row label="Capa de color">

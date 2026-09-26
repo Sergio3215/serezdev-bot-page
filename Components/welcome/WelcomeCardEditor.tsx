@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
+import { useServerPlan } from "@/lib/useServerPlan";
 import {
     RenderImages,
     SelectionTarget,
@@ -44,6 +45,9 @@ function snapshot(setup: Omit<WelcomeCardSetup, "id" | "serverId">) {
 export default function WelcomeCardEditor() {
     const params = useParams();
     const idServer = (params?.server as string) || "";
+
+    const plan = useServerPlan(idServer);
+    const colorOnly = plan === "free";
 
     const [config, setConfig] = useState<WelcomeCardConfig>(() => createDefaultConfig());
     const [sample, setSample] = useState<WelcomeCardSample>(DEFAULT_SAMPLE);
@@ -383,7 +387,7 @@ export default function WelcomeCardEditor() {
 
     /* ---------------- render ---------------- */
 
-    if (isLoading) {
+    if (isLoading || plan === null) {
         return (
             <div className="flex flex-col items-center justify-center space-y-3 py-16 text-zinc-400">
                 <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#5865F2] border-t-transparent"></div>
@@ -496,8 +500,9 @@ export default function WelcomeCardEditor() {
                             <button
                                 key={tpl.name}
                                 type="button"
+                                disabled={colorOnly && tpl.build().background.type !== "color"}
                                 onClick={() => applyTemplate(tpl.build)}
-                                className="rounded-lg border border-white/10 bg-[#111214] px-3 py-1.5 text-[11px] font-semibold text-zinc-300 transition-colors hover:border-[#5865F2]/50 hover:text-white cursor-pointer"
+                                className="rounded-lg border border-white/10 bg-[#111214] px-3 py-1.5 text-[11px] font-semibold text-zinc-300 transition-colors hover:border-[#5865F2]/50 hover:text-white cursor-pointer disabled:cursor-not-allowed disabled:opacity-40"
                             >
                                 {tpl.name}
                             </button>
@@ -702,6 +707,7 @@ export default function WelcomeCardEditor() {
                         onAvatarChange={patchAvatar}
                         onTextChange={patchText}
                         onTextDelete={deleteText}
+                        colorOnly={colorOnly}
                     />
                 </div>
             </div>

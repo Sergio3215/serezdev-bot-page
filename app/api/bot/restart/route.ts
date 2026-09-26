@@ -7,8 +7,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "No autorizado" }, { status: 401 });
   }
 
-  // Soporta tanto RAILWAY_TOKEN como NEXT_PUBLIC_RAILWAYS_TOKEN
-  const token = process.env.RAILWAY_TOKEN || process.env.NEXT_PUBLIC_RAILWAYS_TOKEN;
+  const token = process.env.RAILWAYS_TOKEN || process.env.RAILWAY_TOKEN;
 
   if (!token) {
     return NextResponse.json(
