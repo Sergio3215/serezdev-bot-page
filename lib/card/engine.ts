@@ -83,6 +83,8 @@ function rawLoad(url: string, anonymous: boolean): Promise<HTMLImageElement> {
         // Solo en el primer intento: si el host no responde con CORS, el navegador
         // descarta la imagen entera en vez de dibujarla.
         if (anonymous) img.crossOrigin = "anonymous";
+        // Google (lh3.googleusercontent.com) responde 429 si el Referer es localhost.
+        img.referrerPolicy = "no-referrer";
         img.onload = () => resolve(img);
         img.onerror = () => reject(new Error(`No se pudo cargar la imagen: ${url}`));
         img.src = url;

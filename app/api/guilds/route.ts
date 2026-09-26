@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { fetchDiscordGuilds } from "@/lib/guildAccess";
 
 export interface DiscordGuild {
   id: string;
@@ -20,13 +21,9 @@ export async function GET(request: NextRequest) {
 
   try {
     // 1. Obtener servidores donde está el usuario
-    const userGuildsRes = await fetch("https://discord.com/api/users/@me/guilds", {
-      headers: {
-        Authorization: `Bearer ${userToken}`,
-      },
-    });
+    const userGuildsRes = await fetchDiscordGuilds(`Bearer ${userToken}`);
 
-    if (userGuildsRes.status === 401) {
+    if (!userGuildsRes.ok && userGuildsRes.status === 401) {
       return NextResponse.json(
         {
           error: "Token expirado o falta el scope 'guilds'",
@@ -37,14 +34,13 @@ export async function GET(request: NextRequest) {
     }
 
     if (!userGuildsRes.ok) {
-      const errData = await userGuildsRes.json();
       return NextResponse.json(
-        { error: "Error al consultar servidores de Discord", details: errData },
+        { error: "Error al consultar servidores de Discord", details: userGuildsRes.body },
         { status: userGuildsRes.status }
       );
     }
 
-    const userGuilds: DiscordGuild[] = await userGuildsRes.json();
+    const userGuilds = userGuildsRes.guilds as DiscordGuild[];
 
     // 2. Filtrar donde el usuario es Administrador (permiso 0x8, 0x20 o es owner)
     // ADMINISTRATOR bit is 0x8 (1 << 3), MANAGE_GUILD bit is 0x20 (1 << 5)
@@ -68,19 +64,14 @@ export async function GET(request: NextRequest) {
     if (botToken && botToken.trim() !== "") {
       hasBotToken = true;
       try {
-        const botGuildsRes = await fetch("https://discord.com/api/users/@me/guilds", {
-          headers: {
-            Authorization: `Bot ${botToken.trim()}`,
-          },
-        });
+        const botGuildsRes = await fetchDiscordGuilds(`Bot ${botToken.trim()}`);
 
         if (botGuildsRes.ok) {
-          const botGuilds: Array<{ id: string }> = await botGuildsRes.json();
-          botGuildIds = new Set(botGuilds.map((g) => g.id));
+          botGuildIds = new Set(botGuildsRes.guilds.map((g) => g.id));
         } else {
           console.error(
             "Error al consultar servidores del bot con DISCORD_BOT_TOKEN:",
-            await botGuildsRes.text()
+            botGuildsRes.body
           );
         }
       } catch (botErr) {

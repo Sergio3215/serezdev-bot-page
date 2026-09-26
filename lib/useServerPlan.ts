@@ -1,10 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 import type { PlanId } from "@/types/Billing";
 
+/** Plan del servidor abierto, consultado una sola vez por `ServerDashboard`. */
+export const ServerPlanContext = createContext<PlanId | null>(null);
+
 /** Plan efectivo del servidor; `null` mientras carga. Si no se puede leer, cuenta como Free. */
-export function useServerPlan(serverId: string): PlanId | null {
+export function useFetchServerPlan(serverId: string): PlanId | null {
     const [plan, setPlan] = useState<PlanId | null>(null);
 
     useEffect(() => {
@@ -22,4 +25,8 @@ export function useServerPlan(serverId: string): PlanId | null {
     }, [serverId]);
 
     return plan;
+}
+
+export function useServerPlan(): PlanId | null {
+    return useContext(ServerPlanContext);
 }

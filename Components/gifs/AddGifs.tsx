@@ -25,7 +25,7 @@ export default function AddGifs({ interactions, idServer, goBack, defaultInterac
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [errorMsg, setErrorMsg] = useState("");
 
-    const plan = useServerPlan(idServer);
+    const plan = useServerPlan();
     const [customCount, setCustomCount] = useState<number | null>(null);
 
     const avisoUrl = url.trim() ? avisoParaFuente(normalizeImageUrl(url).source) : null;

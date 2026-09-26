@@ -4,7 +4,7 @@ import { serverSelect } from "@/types/DiscordTypes";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useState } from "react";
-import { useServerPlan } from "@/lib/useServerPlan";
+import { ServerPlanContext, useFetchServerPlan } from "@/lib/useServerPlan";
 import { canRestartBot } from "@/lib/plans";
 import Section from "@/Components/ui/Section";
 import ManageSetting from "@/Components/dashboard/ManageSettings";
@@ -21,7 +21,7 @@ export default function ServerDashboard({ filteredGuilds }: serverSelect) {
     const params = useParams();
     const idServer = (params?.server as string) || "";
 
-    const plan = useServerPlan(idServer);
+    const plan = useFetchServerPlan(idServer);
     const restartAllowed = plan !== null && canRestartBot(plan, idServer);
 
     const [isResetting, setIsResetting] = useState(false);
@@ -74,7 +74,7 @@ export default function ServerDashboard({ filteredGuilds }: serverSelect) {
     // console.log(filteredGuilds);
 
     return (
-        <>
+        <ServerPlanContext.Provider value={plan}>
             {
                 idServer !== "" && (
                     <div>
@@ -240,6 +240,6 @@ export default function ServerDashboard({ filteredGuilds }: serverSelect) {
                     </div>
                 </div>
             )}
-        </>
+        </ServerPlanContext.Provider>
     )
 }

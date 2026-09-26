@@ -41,7 +41,7 @@ export default function BirthdayCardEditor({ channelId }: { channelId: string | 
     const params = useParams();
     const idServer = (params?.server as string) || "";
 
-    const plan = useServerPlan(idServer);
+    const plan = useServerPlan();
     const allowedBackgrounds = allowedCardBackgrounds(plan ?? "free", idServer);
 
     const [config, setConfig] = useState<BirthdayCardConfig>(() => createDefaultConfig());
