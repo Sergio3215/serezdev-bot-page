@@ -31,6 +31,7 @@ export default function ServerDashboard({ filteredGuilds }: serverSelect) {
     const [title, setTitle] = useState("");
 
     const [showBirthdayModal, setShowBirthdayModal] = useState<boolean>(false);
+    const [showBillingSoon, setShowBillingSoon] = useState<boolean>(false);
 
     const resetBot = async () => {
         setIsResetting(true);
@@ -99,10 +100,7 @@ export default function ServerDashboard({ filteredGuilds }: serverSelect) {
                                             </div>
                                             {state == "" && (
                                                 <button
-                                                    onClick={() => {
-                                                        setState("billing");
-                                                        setTitle("Gestionar mi plan")
-                                                    }}
+                                                    onClick={() => setShowBillingSoon(true)}
                                                     className="rounded-lg border border-white/15 bg-white/5 px-3.5 py-2 text-xs font-semibold text-zinc-200 transition-colors hover:bg-white/10 cursor-pointer"
                                                 >
                                                     Gestionar mi plan
@@ -181,6 +179,52 @@ export default function ServerDashboard({ filteredGuilds }: serverSelect) {
                     </div>
                 )
             }
+
+            {showBillingSoon && (
+                <div
+                    className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 transition-all"
+                    onClick={(e) => {
+                        if (e.target === e.currentTarget) {
+                            setShowBillingSoon(false);
+                        }
+                    }}
+                >
+                    <div className="bg-[#1e1f22] border border-white/10 rounded-2xl p-6 sm:p-7 w-full max-w-md shadow-2xl text-white space-y-5">
+                        <div className="flex justify-between items-center pb-3 border-b border-white/10">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2.5 rounded-xl bg-[#5865F2]/10 text-[#aab1ff] border border-[#5865F2]/20 text-xl">
+                                    💳
+                                </div>
+                                <div>
+                                    <h3 className="text-lg font-bold tracking-tight text-white">Gestionar mi plan</h3>
+                                    <p className="text-xs text-zinc-400">Próximamente</p>
+                                </div>
+                            </div>
+                            <button
+                                type="button"
+                                className="text-zinc-400 hover:text-white text-2xl font-bold px-2 py-1 cursor-pointer transition-colors leading-none"
+                                onClick={() => setShowBillingSoon(false)}
+                            >
+                                &times;
+                            </button>
+                        </div>
+
+                        <p className="text-xs leading-relaxed text-zinc-300">
+                            Estamos implementando los métodos de pago. Muy pronto vas a poder mejorar el plan de tu servidor a Pro o Premium desde acá.
+                        </p>
+
+                        <div className="pt-2">
+                            <button
+                                type="button"
+                                onClick={() => setShowBillingSoon(false)}
+                                className="w-full bg-[#5865F2] hover:bg-[#4752c4] py-2.5 rounded-xl text-xs font-semibold text-white shadow-lg shadow-[#5865F2]/20 transition-all cursor-pointer"
+                            >
+                                Entendido
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Modal emergente cuando el recordatorio no está configurado */}
             {showBirthdayModal && (
