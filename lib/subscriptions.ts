@@ -1,3 +1,4 @@
+import { ALWAYS_PREMIUM_SERVER_IDS } from "@/lib/plans";
 import type { PlanId, SubscriptionState, SubscriptionUpsert, SubscriptionView } from "@/types/Billing";
 
 /**
@@ -87,10 +88,19 @@ export function resolveActivePlan(state: SubscriptionState | null): PlanId {
 
 /** Vista recortada para el cliente. */
 export function toView(serverId: string, state: SubscriptionState | null): SubscriptionView {
+    if (ALWAYS_PREMIUM_SERVER_IDS.includes(serverId)) {
+        return { serverId, plan: "premium", status: "active", currentPeriodEnd: null };
+    }
     return {
         serverId,
         plan: resolveActivePlan(state),
         status: state?.status ?? "active",
         currentPeriodEnd: state?.currentPeriodEnd ?? null,
     };
+}
+
+/** Plan vigente del servidor. Los de Premium permanente no consultan al backend. */
+export async function getServerPlanView(serverId: string): Promise<SubscriptionView> {
+    if (ALWAYS_PREMIUM_SERVER_IDS.includes(serverId)) return toView(serverId, null);
+    return toView(serverId, await getSubscription(serverId));
 }

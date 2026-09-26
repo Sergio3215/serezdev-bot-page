@@ -123,6 +123,6 @@ export interface birthdayInspectorType {
     onAvatarChange: (patch: Partial<BirthdayAvatar>) => void;
     onTextChange: (id: string, patch: Partial<BirthdayTextLayer>) => void;
     onTextDelete: (id: string) => void;
-    /** Plan Free: solo fondo de color. */
-    colorOnly?: boolean;
+    /** Tipos de fondo que permite el plan del servidor. */
+    allowedBackgrounds?: BackgroundType[];
 }

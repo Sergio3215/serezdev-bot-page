@@ -145,9 +145,11 @@ export default function BirthdayCardInspector({
     onAvatarChange,
     onTextChange,
     onTextDelete,
-    colorOnly = false,
+    allowedBackgrounds = ["color", "gradient", "image"],
 }: birthdayInspectorType) {
     const bg = config.background;
+    const gradientLocked = !allowedBackgrounds.includes("gradient");
+    const imageLocked = !allowedBackgrounds.includes("image");
     const deco = config.decoration;
     const layer = selection?.kind === "text" ? config.texts.find((t) => t.id === selection.id) : undefined;
     const avisoFondo = bg.imageUrl ? avisoParaFuente(normalizeImageUrl(bg.imageUrl).source) : null;
@@ -184,8 +186,8 @@ export default function BirthdayCardInspector({
                     onChange={(type) => onBackgroundChange({ type })}
                     options={[
                         { label: "Color", value: "color" },
-                        { label: colorOnly ? "Degradado (Pro)" : "Degradado", value: "gradient", disabled: colorOnly },
-                        { label: colorOnly ? "Imagen (Pro)" : "Imagen", value: "image", disabled: colorOnly },
+                        { label: gradientLocked ? "Degradado (Pro)" : "Degradado", value: "gradient", disabled: gradientLocked },
+                        { label: imageLocked ? "Imagen (Premium)" : "Imagen", value: "image", disabled: imageLocked },
                     ]}
                 />
 
@@ -195,14 +197,16 @@ export default function BirthdayCardInspector({
                     </Row>
                 )}
 
-                {colorOnly && bg.type !== "color" && (
+                {!allowedBackgrounds.includes(bg.type) && (
                     <p className="text-[10px] leading-relaxed text-amber-400">
-                        Degradado e imagen son del plan Pro. Con el plan Free podés cambiar a color.
+                        {bg.type === "image"
+                            ? "El fondo de imagen es del plan Premium. Podés cambiarlo a otro tipo de fondo."
+                            : "El fondo degradado es del plan Pro. Podés cambiarlo a color."}
                     </p>
                 )}
 
                 {bg.type === "gradient" && (
-                    <fieldset disabled={colorOnly} className={colorOnly ? "space-y-3 opacity-40 pointer-events-none" : "space-y-3"}>
+                    <fieldset disabled={gradientLocked} className={gradientLocked ? "space-y-3 opacity-40 pointer-events-none" : "space-y-3"}>
                         <Row label="Desde">
                             <ColorInput
                                 value={bg.gradient.from}
@@ -227,7 +231,7 @@ export default function BirthdayCardInspector({
                 )}
 
                 {bg.type === "image" && (
-                    <fieldset disabled={colorOnly} className={colorOnly ? "space-y-3 opacity-40 pointer-events-none" : "space-y-3"}>
+                    <fieldset disabled={imageLocked} className={imageLocked ? "space-y-3 opacity-40 pointer-events-none" : "space-y-3"}>
                         <input
                             type="url"
                             value={bg.imageUrl || ""}

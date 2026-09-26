@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import { useServerPlan } from "@/lib/useServerPlan";
+import { allowedCardBackgrounds } from "@/lib/plans";
 import {
     BirthdayAvatar,
     BirthdayBackground,
@@ -41,7 +42,7 @@ export default function BirthdayCardEditor({ channelId }: { channelId: string | 
     const idServer = (params?.server as string) || "";
 
     const plan = useServerPlan(idServer);
-    const colorOnly = plan === "free";
+    const allowedBackgrounds = allowedCardBackgrounds(plan ?? "free", idServer);
 
     const [config, setConfig] = useState<BirthdayCardConfig>(() => createDefaultConfig());
     const [sample, setSample] = useState<BirthdayCardSample>(DEFAULT_BIRTHDAY_SAMPLE);
@@ -462,7 +463,7 @@ export default function BirthdayCardEditor({ channelId }: { channelId: string | 
                             <button
                                 key={tpl.name}
                                 type="button"
-                                disabled={colorOnly && tpl.build().background.type !== "color"}
+                                disabled={!allowedBackgrounds.includes(tpl.build().background.type)}
                                 onClick={() => applyTemplate(tpl.build)}
                                 className="rounded-lg border border-white/10 bg-[#111214] px-3 py-1.5 text-[11px] font-semibold text-zinc-300 transition-colors hover:border-[#5865F2]/50 hover:text-white cursor-pointer disabled:cursor-not-allowed disabled:opacity-40"
                             >
@@ -654,7 +655,7 @@ export default function BirthdayCardEditor({ channelId }: { channelId: string | 
                         onAvatarChange={patchAvatar}
                         onTextChange={patchText}
                         onTextDelete={deleteText}
-                        colorOnly={colorOnly}
+                        allowedBackgrounds={allowedBackgrounds}
                     />
                 </div>
             </div>

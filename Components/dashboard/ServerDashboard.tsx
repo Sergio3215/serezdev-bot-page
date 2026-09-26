@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useState } from "react";
 import { useServerPlan } from "@/lib/useServerPlan";
+import { canRestartBot } from "@/lib/plans";
 import Section from "@/Components/ui/Section";
 import ManageSetting from "@/Components/dashboard/ManageSettings";
 import ButtonDiscord from "@/Components/ui/ButtonDiscord";
@@ -21,6 +22,7 @@ export default function ServerDashboard({ filteredGuilds }: serverSelect) {
     const idServer = (params?.server as string) || "";
 
     const plan = useServerPlan(idServer);
+    const restartAllowed = plan !== null && canRestartBot(plan, idServer);
 
     const [isResetting, setIsResetting] = useState(false);
     const [statusMessage, setStatusMessage] = useState<{ text: string; isError: boolean } | null>(null);
@@ -36,6 +38,8 @@ export default function ServerDashboard({ filteredGuilds }: serverSelect) {
         try {
             const res = await fetch("/api/bot/restart", {
                 method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ serverId: idServer }),
             });
             const data = await res.json();
             if (res.ok) {
@@ -133,7 +137,7 @@ export default function ServerDashboard({ filteredGuilds }: serverSelect) {
                                                             <Section title="Reiniciar el Bot">
                                                                 <button
                                                                     onClick={resetBot}
-                                                                    disabled={isResetting}
+                                                                    disabled={isResetting || !restartAllowed}
                                                                     className="inline-flex items-center gap-2 rounded-xl bg-[#6e0a0a] shadow-[#bd2e2e]/20 hover:bg-[#bd2e2e] px-6 py-4 text-xs font-semibold text-white shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed mb-2 cursor-pointer"
                                                                 >
                                                                     {isResetting ? (
@@ -142,7 +146,7 @@ export default function ServerDashboard({ filteredGuilds }: serverSelect) {
                                                                             <span>Reiniciando bot...</span>
                                                                         </>
                                                                     ) : (
-                                                                        <span>Reiniciar Bot</span>
+                                                                        <span>{restartAllowed ? "Reiniciar Bot" : "Reiniciar Bot (Pro)"}</span>
                                                                     )}
                                                                 </button>
                                                             </Section>

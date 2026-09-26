@@ -4,7 +4,7 @@ import { addGifsType, InteractionDataType } from "@/types/Elements";
 import { useState, useEffect } from "react";
 import { avisoParaFuente, normalizeImageUrl } from "@/lib/imageUrl";
 import { useServerPlan } from "@/lib/useServerPlan";
-import { FREE_CUSTOM_GIF_LIMIT } from "@/lib/plans";
+import { PLAN_LIMITS, PLANS } from "@/lib/plans";
 
 const API_URL = process.env.NEXT_PUBLIC_URL || "https://server-serez-dev-bot-production.up.railway.app";
 
@@ -30,22 +30,23 @@ export default function AddGifs({ interactions, idServer, goBack, defaultInterac
 
     const avisoUrl = url.trim() ? avisoParaFuente(normalizeImageUrl(url).source) : null;
 
-    const isFree = plan === "free";
-    const limitReached = isFree && customCount !== null && customCount >= FREE_CUSTOM_GIF_LIMIT;
-    const checkingLimit = plan === null || (isFree && customCount === null);
+    const gifLimit = plan ? PLAN_LIMITS[plan].customGifs : null;
+    const limited = gifLimit !== null;
+    const limitReached = limited && customCount !== null && customCount >= gifLimit;
+    const checkingLimit = plan === null || (limited && customCount === null);
 
     useEffect(() => {
-        if (plan !== "free") return;
+        if (gifLimit === null) return;
         let cancelled = false;
         countCustomGifs(interactions.map((i) => i.name), idServer)
             .then((count) => {
                 if (!cancelled) setCustomCount(count);
             })
             .catch(() => {
-                if (!cancelled) setCustomCount(FREE_CUSTOM_GIF_LIMIT);
+                if (!cancelled) setCustomCount(gifLimit);
             });
         return () => { cancelled = true; };
-    }, [plan, interactions, idServer]);
+    }, [gifLimit, interactions, idServer]);
 
     // Bloquear scroll de la página mientras el modal esté abierto y cerrar con Escape
     useEffect(() => {
@@ -226,14 +227,14 @@ export default function AddGifs({ interactions, idServer, goBack, defaultInterac
                         </select>
                     </div>
 
-                    {isFree && customCount !== null && (
+                    {limited && plan && customCount !== null && (
                         <div className={`text-xs rounded-lg p-2.5 border ${limitReached
                             ? "text-amber-300 bg-amber-500/10 border-amber-500/30"
                             : "text-zinc-400 bg-white/5 border-white/10"
                             }`}>
                             {limitReached
-                                ? `Llegaste al límite de ${FREE_CUSTOM_GIF_LIMIT} GIFs personalizados del plan Free. Pasate a Pro para agregar más.`
-                                : `Plan Free: ${customCount} de ${FREE_CUSTOM_GIF_LIMIT} GIFs personalizados usados.`}
+                                ? `Llegaste al límite de ${gifLimit} GIFs personalizados del plan ${PLANS[plan].name}. Mejorá tu plan para agregar más.`
+                                : `Plan ${PLANS[plan].name}: ${customCount} de ${gifLimit} GIFs personalizados usados.`}
                         </div>
                     )}
 

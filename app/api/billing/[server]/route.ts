@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { checkGuildAdmin } from "@/lib/guildAccess";
-import { getSubscription, toView } from "@/lib/subscriptions";
+import { getServerPlanView } from "@/lib/subscriptions";
 
 /** GET /api/billing/[server] — plan vigente del servidor (para la UI). */
 export async function GET(
@@ -29,8 +29,7 @@ export async function GET(
     }
 
     try {
-        const sub = await getSubscription(serverId);
-        return NextResponse.json({ subscription: toView(serverId, sub) });
+        return NextResponse.json({ subscription: await getServerPlanView(serverId) });
     } catch (err) {
         console.error("Error al leer la suscripción:", err);
         return NextResponse.json(

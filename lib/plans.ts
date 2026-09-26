@@ -1,4 +1,5 @@
 import type { BillingCycle, Currency, PaymentProvider, Plan, PlanId } from "@/types/Billing";
+import type { BackgroundType } from "@/lib/card/types";
 
 /**
  * Catálogo de planes. Es la única fuente de verdad de precios y features: la UI, el
@@ -16,7 +17,7 @@ export const PLANS: Record<PlanId, Plan> = {
         price: null,
         rank: 0,
         features: [
-            "Interacciones con GIFs",
+            "Interacciones con GIFs (hasta 5 personalizados)",
             "Recordatorio de cumpleaños",
             "Bienvenida con rol automático",
         ],
@@ -32,9 +33,9 @@ export const PLANS: Record<PlanId, Plan> = {
         rank: 1,
         features: [
             "Todo lo de Free",
-            "Tarjeta de bienvenida con imagen",
-            "Tarjeta de cumpleaños con imagen",
-            "GIFs personalizados ilimitados",
+            "Tarjetas con fondo degradado",
+            "Hasta 10 GIFs personalizados",
+            "Reinicio del bot bajo demanda",
         ],
     },
     premium: {
@@ -48,15 +49,41 @@ export const PLANS: Record<PlanId, Plan> = {
         rank: 2,
         features: [
             "Todo lo de Pro",
+            "Tarjetas con fondo de imagen",
+            "GIFs personalizados ilimitados",
             "Plantillas exclusivas de tarjetas",
             "Prioridad de soporte",
-            "Reinicio del bot bajo demanda",
         ],
     },
 };
 
-/** GIFs personalizados que puede tener un servidor Free, sumando todas las interacciones. */
-export const FREE_CUSTOM_GIF_LIMIT = 5;
+/** Servidores de Discord con Premium permanente, sin importar su suscripción. */
+export const ALWAYS_PREMIUM_SERVER_IDS = ["1235045954491781150"];
+
+/** Servidores que pueden usar degradado e imagen en las tarjetas aunque sean Free. */
+export const CARD_BACKGROUND_UNLOCKED_SERVER_IDS = ["748652112485023854"];
+
+/**
+ * Límites por plan. `customGifs` es el total de GIFs personalizados del servidor,
+ * sumando todas las interacciones (null = sin límite).
+ */
+export const PLAN_LIMITS: Record<PlanId, { customGifs: number | null; cardBackgrounds: BackgroundType[]; botRestart: boolean }> = {
+    free: { customGifs: 5, cardBackgrounds: ["color"], botRestart: false },
+    pro: { customGifs: 10, cardBackgrounds: ["color", "gradient"], botRestart: true },
+    premium: { customGifs: null, cardBackgrounds: ["color", "gradient", "image"], botRestart: true },
+};
+
+/** Servidores que pueden reiniciar el bot aunque sean Free. */
+export const BOT_RESTART_SERVER_IDS = ["748652112485023854"];
+
+export function canRestartBot(plan: PlanId, serverId: string): boolean {
+    return PLAN_LIMITS[plan].botRestart || BOT_RESTART_SERVER_IDS.includes(serverId);
+}
+
+export function allowedCardBackgrounds(plan: PlanId, serverId: string): BackgroundType[] {
+    if (CARD_BACKGROUND_UNLOCKED_SERVER_IDS.includes(serverId)) return ["color", "gradient", "image"];
+    return PLAN_LIMITS[plan].cardBackgrounds;
+}
 
 /** En orden de presentación. */
 export const PLAN_LIST: Plan[] = [PLANS.free, PLANS.pro, PLANS.premium];
