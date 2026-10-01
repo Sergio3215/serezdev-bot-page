@@ -23,44 +23,15 @@ import {
     type DecorationSet,
     type ViewUpdate,
 } from "@codemirror/view";
-import type { LanguageService, SignatureHelpResult } from "@/lib/custom-command-language";
+import { highlightRanges, type LanguageService, type SignatureHelpResult } from "@/lib/custom-command-language";
 
 const LINT_DELAY_MS = 150;
-
-function tokenClasses(service: LanguageService, source: string): { from: number; to: number; className: string }[] {
-    const contract = service.contract;
-    const keywordTypes = new Set(contract.lexical.keywords.values());
-    const literalTypes = new Set(["true", "false", "null"].map((word) => contract.lexical.keywords.get(word)));
-    const colon = contract.lexical.delimiters.get(":");
-    const dot = contract.lexical.delimiters.get(".");
-    const { tokens, trivia } = service.tokenize(source);
-    const significant = tokens.filter((token) => token.type !== "NEWLINE" && token.type !== "EOF");
-
-    const ranges = significant.flatMap((token, index) => {
-        let className: string | null = null;
-        if (literalTypes.has(token.type)) className = "cc-literal";
-        else if (keywordTypes.has(token.type)) className = "cc-keyword";
-        else if (token.type === "STRING") className = "cc-string";
-        else if (token.type === "NUMBER") className = "cc-number";
-        else if (token.type === "OPERATOR") className = "cc-operator";
-        else if (token.type === "UNSUPPORTED") className = "cc-invalid";
-        else if (token.type === "IDENTIFIER") {
-            const definition = contract.functionByName.get(token.raw);
-            if (definition) className = `cc-fn-${definition.kind}`;
-            else if (significant[index + 1]?.type === colon || significant[index - 1]?.type === dot) className = "cc-property";
-            else className = "cc-variable";
-        }
-        return className ? [{ from: token.loc.start.offset, to: token.loc.end.offset, className }] : [];
-    });
-    for (const comment of trivia) ranges.push({ from: comment.loc.start.offset, to: comment.loc.end.offset, className: "cc-comment" });
-    return ranges.filter((range) => range.to > range.from).sort((a, b) => a.from - b.from);
-}
 
 function highlighter(service: LanguageService): Extension {
     const build = (view: EditorView): DecorationSet => {
         const builder = new RangeSetBuilder<Decoration>();
-        for (const range of tokenClasses(service, view.state.doc.toString())) {
-            builder.add(range.from, range.to, Decoration.mark({ class: range.className }));
+        for (const range of highlightRanges(service.contract, view.state.doc.toString())) {
+            builder.add(range.from, range.to, Decoration.mark({ class: `cc-${range.kind}` }));
         }
         return builder.finish();
     };

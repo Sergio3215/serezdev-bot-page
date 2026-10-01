@@ -5,7 +5,8 @@ import { createMercadoPagoCheckout } from "@/lib/payments/mercadopago";
 import { createLemonSqueezyCheckout } from "@/lib/payments/lemonsqueezy";
 import type { BillingCycle, PaymentProvider, PlanId } from "@/types/Billing";
 
-const PROVIDERS: PaymentProvider[] = ["lemonsqueezy", "mercadopago"];
+/** Por ahora solo se cobra con Mercado Pago; Lemon Squeezy queda deshabilitado. */
+const PROVIDERS: PaymentProvider[] = ["mercadopago"];
 const CYCLES: BillingCycle[] = ["monthly", "onetime"];
 
 /** Id de Discord de quien paga, para registro. La cookie no es fuente de autorización. */

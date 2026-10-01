@@ -330,7 +330,11 @@ export default function CustomCommandManager({ editing, setEditing }: CustomComm
 
                 {draft.mode === "advanced" && (
                     <p className="text-[11px] text-zinc-500">
-                        Formatear: botón o Shift+Alt+F en el editor.
+                        Formatear: botón o Shift+Alt+F en el editor. ¿Primera vez escribiendo código?{" "}
+                        <a href="/docs/comandos" target="_blank" rel="noopener" className="text-[#aab1ff] underline underline-offset-2 hover:text-white">
+                            Abrí la guía del modo avanzado
+                        </a>
+                        .
                     </p>
                 )}
             </div>
@@ -341,7 +345,12 @@ export default function CustomCommandManager({ editing, setEditing }: CustomComm
         <div className="mx-auto mt-6 max-w-4xl space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="space-y-0.5">
-                    <p className="text-xs text-zinc-400">El bot responde cuando un mensaje coincide exactamente con el texto del comando.</p>
+                    <p className="text-xs text-zinc-400">
+                        El bot responde cuando un mensaje coincide exactamente con el texto del comando.{" "}
+                        <a href="/docs/comandos" target="_blank" rel="noopener" className="text-[#aab1ff] underline underline-offset-2 hover:text-white">
+                            Ver la guía de comandos
+                        </a>
+                    </p>
                     {plan && (
                         <p className={`text-[11px] ${atLimit ? "text-amber-300" : "text-zinc-500"}`}>
                             {commandLimit === null

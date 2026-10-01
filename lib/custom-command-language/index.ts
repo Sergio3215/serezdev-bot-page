@@ -19,6 +19,7 @@ export {
 } from "./ide/languageService";
 export { SimpleModelError, contextSources, queryResolver, simpleShape, sourceOf, type SimpleAction, type SimpleShape, type SimpleValue } from "./simple/generator";
 export { printString } from "./formatter/stringPrinter";
+export { highlightRanges, type HighlightKind, type HighlightRange } from "./ide/highlight";
 
 export const languageService = createLanguageService(defaultContract);
 

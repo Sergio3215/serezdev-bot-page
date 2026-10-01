@@ -5,6 +5,9 @@ import { useParams, useSearchParams } from "next/navigation";
 import { PLAN_LIST, amountFor, currencyForProvider } from "@/lib/plans";
 import type { BillingCycle, Currency, PaymentProvider, PlanId, SubscriptionView } from "@/types/Billing";
 
+/** Compras deshabilitadas hasta tener definido el segundo proveedor de pago. */
+const PURCHASES_ENABLED = false;
+
 function formatPrice(amount: number, currency: Currency): string {
     if (currency === "usd") {
         return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(amount);
@@ -17,7 +20,7 @@ export default function PricingPlans() {
     const searchParams = useSearchParams();
     const idServer = (params?.server as string) || "";
 
-    const [provider, setProvider] = useState<PaymentProvider>("mercadopago");
+    const provider: PaymentProvider = "mercadopago";
     const [cycle, setCycle] = useState<BillingCycle>("monthly");
     const [email, setEmail] = useState("");
 
@@ -119,14 +122,7 @@ export default function PricingPlans() {
             <div className="flex flex-col gap-4 sm:flex-row">
                 <div className="flex-1">
                     <label className="mb-1.5 block text-[11px] font-semibold text-zinc-400">Medio de pago</label>
-                    <div className="flex gap-2">
-                        <button className={segBtn(provider === "mercadopago")} onClick={() => setProvider("mercadopago")}>
-                            MercadoPago (ARS)
-                        </button>
-                        <button className={segBtn(provider === "lemonsqueezy")} onClick={() => setProvider("lemonsqueezy")}>
-                            Tarjeta internacional (USD)
-                        </button>
-                    </div>
+                    <p className="text-xs text-zinc-300">Mercado Pago (ARS)</p>
                 </div>
                 <div className="flex-1">
                     <label className="mb-1.5 block text-[11px] font-semibold text-zinc-400">Modalidad</label>
@@ -213,10 +209,11 @@ export default function PricingPlans() {
                                 ) : (
                                     <button
                                         onClick={() => handleCheckout(plan.id)}
-                                        disabled={submitting !== null}
-                                        className="w-full rounded-xl bg-[#5865F2] py-2.5 text-xs font-semibold text-white shadow-lg shadow-[#5865F2]/25 transition-all hover:bg-[#4752c4] disabled:opacity-50 cursor-pointer"
+                                        disabled={!PURCHASES_ENABLED || submitting !== null}
+                                        title={PURCHASES_ENABLED ? undefined : "Próximamente"}
+                                        className="w-full rounded-xl bg-[#5865F2] py-2.5 text-xs font-semibold text-white shadow-lg shadow-[#5865F2]/25 transition-all hover:bg-[#4752c4] disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
                                     >
-                                        {submitting === plan.id ? "Redirigiendo..." : `Elegir ${plan.name}`}
+                                        {!PURCHASES_ENABLED ? `${plan.name} · Próximamente` : submitting === plan.id ? "Redirigiendo..." : `Elegir ${plan.name}`}
                                     </button>
                                 )}
                             </div>
