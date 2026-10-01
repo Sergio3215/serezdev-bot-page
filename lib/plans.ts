@@ -18,6 +18,7 @@ export const PLANS: Record<PlanId, Plan> = {
         rank: 0,
         features: [
             "Interacciones con GIFs (hasta 5 personalizados)",
+            "Hasta 4 comandos personalizados",
             "Recordatorio de cumpleaños",
             "Bienvenida con rol automático",
         ],
@@ -35,6 +36,7 @@ export const PLANS: Record<PlanId, Plan> = {
             "Todo lo de Free",
             "Tarjetas con fondo degradado",
             "Hasta 10 GIFs personalizados",
+            "Hasta 15 comandos personalizados",
             "Reinicio del bot bajo demanda",
         ],
     },
@@ -51,6 +53,7 @@ export const PLANS: Record<PlanId, Plan> = {
             "Todo lo de Pro",
             "Tarjetas con fondo de imagen",
             "GIFs personalizados ilimitados",
+            "Comandos personalizados ilimitados",
             "Plantillas exclusivas de tarjetas",
             "Prioridad de soporte",
         ],
@@ -65,12 +68,13 @@ export const CARD_BACKGROUND_UNLOCKED_SERVER_IDS = ["748652112485023854"];
 
 /**
  * Límites por plan. `customGifs` es el total de GIFs personalizados del servidor,
- * sumando todas las interacciones (null = sin límite).
+ * sumando todas las interacciones; `customCommands`, el total de comandos personalizados
+ * creados, activos o no (null = sin límite).
  */
-export const PLAN_LIMITS: Record<PlanId, { customGifs: number | null; cardBackgrounds: BackgroundType[]; botRestart: boolean }> = {
-    free: { customGifs: 5, cardBackgrounds: ["color"], botRestart: false },
-    pro: { customGifs: 10, cardBackgrounds: ["color", "gradient"], botRestart: true },
-    premium: { customGifs: null, cardBackgrounds: ["color", "gradient", "image"], botRestart: true },
+export const PLAN_LIMITS: Record<PlanId, { customGifs: number | null; customCommands: number | null; cardBackgrounds: BackgroundType[]; botRestart: boolean }> = {
+    free: { customGifs: 5, customCommands: 4, cardBackgrounds: ["color"], botRestart: false },
+    pro: { customGifs: 10, customCommands: 15, cardBackgrounds: ["color", "gradient"], botRestart: true },
+    premium: { customGifs: null, customCommands: null, cardBackgrounds: ["color", "gradient", "image"], botRestart: true },
 };
 
 /** Servidores que pueden reiniciar el bot aunque sean Free. */

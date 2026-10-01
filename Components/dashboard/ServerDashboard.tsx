@@ -132,6 +132,12 @@ export default function ServerDashboard({ filteredGuilds }: serverSelect) {
                                                                 setTitle("Administrador de Interacciones")
                                                             }} title={`Administrar &rarr;`} />
                                                         </Section>
+                                                        <Section title="Comandos Personalizados">
+                                                            <ButtonDiscord onClick={() => {
+                                                                setState("customCommand");
+                                                                setTitle("Comandos Personalizados")
+                                                            }} title={`Administrar &rarr;`} />
+                                                        </Section>
                                                         <div className="flex flex-col max-w-lg w-full items-center">
                                                             <Section title="Reiniciar el Bot">
                                                                 <button

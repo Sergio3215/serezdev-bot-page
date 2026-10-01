@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "languageVersion": "1.0.0",
+  "languageVersion": "1.1.0",
   "caseSensitive": true,
   "callSyntax": "Identifier(arguments)",
   "userWritesAwait": false,
@@ -50,6 +50,38 @@
       "returns": { "type": "Array<Member>", "nullable": false, "readOnly": true },
       "signatures": ["GetMembers(): Array<Member>"],
       "examples": ["const members = GetMembers()"]
+    },
+    "GetAuthor": {
+      "kind": "query",
+      "description": "Obtiene el miembro que escribió el mensaje que activó el comando.",
+      "parameters": [],
+      "returns": { "type": "Member", "nullable": false, "readOnly": true },
+      "signatures": ["GetAuthor(): Member"],
+      "examples": ["const author = GetAuthor()", "AddRole(GetAuthor(), Role(\"371826690424569866\"))"]
+    },
+    "GetMentionedMember": {
+      "kind": "query",
+      "description": "Obtiene el primer miembro mencionado en el mensaje, según el orden del texto. Ignora menciones de roles, @everyone, @here y usuarios que no pertenecen al servidor. El comando exige una mención: si el mensaje no menciona a ningún miembro, no se ejecuta.",
+      "parameters": [],
+      "returns": { "type": "Member", "nullable": false, "readOnly": true },
+      "requires": ["mention"],
+      "signatures": ["GetMentionedMember(): Member"],
+      "examples": [
+        "const target = GetMentionedMember()",
+        "AddRole(GetMentionedMember(), Role(\"371826690424569866\"))"
+      ]
+    },
+    "GetMentionedMembers": {
+      "kind": "query",
+      "description": "Obtiene todos los miembros mencionados en el orden del texto, sin duplicados. Ignora menciones de roles, @everyone, @here y usuarios que no pertenecen al servidor. El comando exige una mención: si el mensaje no menciona a ningún miembro, no se ejecuta, por lo que el array nunca está vacío.",
+      "parameters": [],
+      "returns": { "type": "Array<Member>", "nullable": false, "readOnly": true },
+      "requires": ["mention"],
+      "signatures": ["GetMentionedMembers(): Array<Member>"],
+      "examples": [
+        "const members = GetMentionedMembers()",
+        "for (const member of GetMentionedMembers()) {\n    AddRole(member, Role(\"371826690424569866\"))\n}"
+      ]
     },
     "HasRole": {
       "kind": "query",

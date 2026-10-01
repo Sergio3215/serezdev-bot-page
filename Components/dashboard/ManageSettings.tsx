@@ -6,6 +6,7 @@ import { useState } from "react";
 import BirthdaySetup from "@/Components/birthday/BirthdaySetup";
 import JoinServerSetup from "@/Components/welcome/JoinServerSetup";
 import PricingPlans from "@/Components/billing/PricingPlans";
+import CustomCommandManager from "@/Components/customCommands/CustomCommandManager";
 
 export default function ManageSetting({ title, state, setState }: ManageSettingType) {
     const [newFlag, setNewFlag] = useState<boolean>(false);
@@ -44,6 +45,13 @@ export default function ManageSetting({ title, state, setState }: ManageSettingT
                     state === "joinServer" && (
                         <>
                             <JoinServerSetup />
+                        </>
+                    )
+                }
+                {
+                    state === "customCommand" && (
+                        <>
+                            <CustomCommandManager editing={newFlag} setEditing={setNewFlag} />
                         </>
                     )
                 }
