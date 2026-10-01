@@ -1,0 +1,80 @@
+{
+  "schemaVersion": 1,
+  "contractVersion": "1.0.0",
+  "language": {
+    "id": "serez-custom-command",
+    "name": "Serez Custom Command",
+    "version": "1.0.0",
+    "locale": "es"
+  },
+  "contracts": {
+    "syntax": "./syntax.json",
+    "rules": "./rules.json",
+    "types": "./types.json",
+    "functions": "./functions.json",
+    "formatter": "./formatter.json"
+  },
+  "frontendBoundary": {
+    "inputs": ["sourceCode", "editorMode", "dynamicOptions"],
+    "outputs": ["code", "ast", "valid", "diagnostics", "languageVersion"],
+    "editorModes": {
+      "simple": {
+        "description": "Genera código del lenguaje desde controles visuales.",
+        "output": "sourceCode"
+      },
+      "advanced": {
+        "description": "Permite editar directamente el mismo código generado por el modo simple.",
+        "input": "sourceCode"
+      }
+    },
+    "sameLanguageForAllModes": true,
+    "runtimeIndependent": true
+  },
+  "dynamicData": {
+    "includedInContract": false,
+    "resources": {
+      "channels": {
+        "displayField": "name",
+        "valueField": "id",
+        "generatedExpression": "Channel(\"{id}\")"
+      },
+      "roles": {
+        "displayField": "name",
+        "valueField": "id",
+        "generatedExpression": "Role(\"{id}\")"
+      }
+    }
+  },
+  "diagnostics": {
+    "shape": {
+      "phase": "string",
+      "code": "string",
+      "message": "string",
+      "loc": {
+        "start": { "line": "integer", "column": "integer", "offset": "integer" },
+        "end": { "line": "integer", "column": "integer", "offset": "integer" }
+      }
+    },
+    "positions": {
+      "lineBase": 1,
+      "columnBase": 0,
+      "offsetBase": 0,
+      "endExclusive": true
+    },
+    "phases": ["tokenizer", "parser", "semantic", "formatter"]
+  },
+  "outOfScope": [
+    "buttons",
+    "selects",
+    "dropdowns",
+    "customId",
+    "interactionEvents",
+    "userDefinedFunctions",
+    "methods",
+    "fetch",
+    "imports",
+    "templateStrings",
+    "fileAttachments",
+    "attachmentUrls"
+  ]
+}

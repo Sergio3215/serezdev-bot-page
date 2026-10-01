@@ -1,0 +1,127 @@
+{
+  "schemaVersion": 1,
+  "languageVersion": "1.0.0",
+  "caseSensitive": true,
+  "callSyntax": "Identifier(arguments)",
+  "userWritesAwait": false,
+  "categories": {
+    "reference": "Crea una referencia controlada a partir de un identificador.",
+    "query": "Obtiene un valor controlado para utilizar dentro del programa.",
+    "action": "Representa una acción disponible en el lenguaje."
+  },
+  "functions": {
+    "Channel": {
+      "kind": "reference",
+      "description": "Crea una referencia de canal a partir de un ID de Discord.",
+      "parameters": [
+        { "name": "channelId", "type": "String", "required": true, "format": "snowflake" }
+      ],
+      "returns": { "type": "ChannelReference", "nullable": false, "readOnly": true },
+      "signatures": ["Channel(channelId: String): ChannelReference"],
+      "examples": ["Channel(\"123456789012345678\")"]
+    },
+    "Role": {
+      "kind": "reference",
+      "description": "Crea una referencia de rol a partir de un ID de Discord.",
+      "parameters": [
+        { "name": "roleId", "type": "String", "required": true, "format": "snowflake" }
+      ],
+      "returns": { "type": "RoleReference", "nullable": false, "readOnly": true },
+      "signatures": ["Role(roleId: String): RoleReference"],
+      "examples": ["Role(\"371826690424569866\")"]
+    },
+    "GetMember": {
+      "kind": "query",
+      "description": "Obtiene un miembro mediante su ID. Puede devolver null.",
+      "parameters": [
+        { "name": "userId", "type": "String", "required": true, "format": "snowflake" }
+      ],
+      "returns": { "type": "Member", "nullable": true, "readOnly": true },
+      "signatures": ["GetMember(userId: String): Member | Null"],
+      "examples": [
+        "const member = GetMember(\"123456789012345678\")",
+        "const member = GetMember(\"123456789012345678\")\nif (member !== null) {\n    ReplyMessage({ message: member.displayName })\n}"
+      ]
+    },
+    "GetMembers": {
+      "kind": "query",
+      "description": "Obtiene una colección de miembros disponibles.",
+      "parameters": [],
+      "returns": { "type": "Array<Member>", "nullable": false, "readOnly": true },
+      "signatures": ["GetMembers(): Array<Member>"],
+      "examples": ["const members = GetMembers()"]
+    },
+    "HasRole": {
+      "kind": "query",
+      "description": "Indica si un miembro contiene la referencia de rol indicada.",
+      "parameters": [
+        { "name": "member", "type": "Member", "required": true },
+        { "name": "role", "type": "RoleReference", "required": true }
+      ],
+      "returns": { "type": "Boolean", "nullable": false, "readOnly": true },
+      "signatures": ["HasRole(member: Member, role: RoleReference): Boolean"],
+      "examples": ["HasRole(member, Role(\"371826690424569866\"))"]
+    },
+    "AddRole": {
+      "kind": "action",
+      "description": "Solicita agregar un rol a un miembro.",
+      "parameters": [
+        { "name": "member", "type": "Member", "required": true },
+        { "name": "role", "type": "RoleReference", "required": true }
+      ],
+      "returns": { "type": "Void", "nullable": false, "readOnly": false },
+      "signatures": ["AddRole(member: Member, role: RoleReference): Void"],
+      "examples": ["AddRole(member, Role(\"371826690424569866\"))"]
+    },
+    "SendMessage": {
+      "kind": "action",
+      "description": "Envía un mensaje al canal indicado o al canal actual cuando channel se omite.",
+      "parameters": [
+        { "name": "config", "type": "SendMessageConfig", "required": true }
+      ],
+      "returns": { "type": "Void", "nullable": false, "readOnly": false },
+      "signatures": ["SendMessage(config: SendMessageConfig): Void"],
+      "examples": [
+        "SendMessage({ message: \"Hola\" })",
+        "SendMessage({ channel: Channel(\"123456789012345678\"), message: \"Hola\" })"
+      ]
+    },
+    "ReplyMessage": {
+      "kind": "action",
+      "description": "Responde con texto al mensaje que originó el comando.",
+      "parameters": [
+        { "name": "config", "type": "ReplyMessageConfig", "required": true }
+      ],
+      "returns": { "type": "Void", "nullable": false, "readOnly": false },
+      "signatures": ["ReplyMessage(config: ReplyMessageConfig): Void"],
+      "examples": ["ReplyMessage({ message: \"Rol agregado\" })"]
+    },
+    "SendEmbed": {
+      "kind": "action",
+      "description": "Envía un embed al canal indicado o al canal actual cuando channel se omite.",
+      "parameters": [
+        { "name": "config", "type": "SendEmbedConfig", "required": true }
+      ],
+      "returns": { "type": "Void", "nullable": false, "readOnly": false },
+      "signatures": ["SendEmbed(config: SendEmbedConfig): Void"],
+      "examples": [
+        "SendEmbed({ description: \"Información\" })",
+        "SendEmbed({ image: \"https://example.com/banner.png\" })",
+        "SendEmbed({ channel: Channel(\"123456789012345678\"), message: \"Aviso\", title: \"Novedad\", image: \"https://example.com/banner.png\" })"
+      ]
+    },
+    "ReplyEmbed": {
+      "kind": "action",
+      "description": "Responde al mensaje de origen con un embed.",
+      "parameters": [
+        { "name": "config", "type": "ReplyEmbedConfig", "required": true }
+      ],
+      "returns": { "type": "Void", "nullable": false, "readOnly": false },
+      "signatures": ["ReplyEmbed(config: ReplyEmbedConfig): Void"],
+      "examples": [
+        "ReplyEmbed({ description: \"Contenido de la respuesta\" })",
+        "ReplyEmbed({ image: \"https://example.com/banner.png\" })"
+      ]
+    }
+  }
+}

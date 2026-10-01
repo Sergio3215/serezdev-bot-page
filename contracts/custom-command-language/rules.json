@@ -1,0 +1,200 @@
+{
+  "schemaVersion": 1,
+  "languageVersion": "1.0.0",
+  "ruleEngine": {
+    "input": ["AST", "types.json", "functions.json", "rules.json"],
+    "output": ["valid", "diagnostics", "expressionTypes", "scopes"],
+    "executesProgram": false,
+    "performsExternalRequests": false
+  },
+  "program": {
+    "minimumStatements": 1,
+    "emptyProgram": "error"
+  },
+  "scopes": {
+    "kind": "block",
+    "programCreatesScope": true,
+    "blockCreatesScope": true,
+    "ifBranchCreatesScope": true,
+    "elseBranchCreatesScope": true,
+    "forOfCreatesScope": true,
+    "duplicateDeclarationInSameScope": "error",
+    "shadowingInChildScope": "allowed",
+    "useBeforeDeclaration": "error"
+  },
+  "bindings": {
+    "let": {
+      "requiresInitializer": true,
+      "mutable": true
+    },
+    "const": {
+      "requiresInitializer": true,
+      "mutable": false,
+      "localObjectContentsMutable": true,
+      "localArrayContentsMutable": true
+    },
+    "forOfBinding": {
+      "requiresInitializer": false,
+      "receivesValueFromIteration": true,
+      "exactlyOneDeclarator": true
+    },
+    "nativeValues": {
+      "readOnly": true
+    }
+  },
+  "controlFlow": {
+    "if": {
+      "conditionType": "Any",
+      "recommendedType": "Boolean",
+      "requiresBlock": true
+    },
+    "forOf": {
+      "iterableKind": "array",
+      "requiresBlock": true,
+      "bindingKinds": ["let", "const"],
+      "reusingExistingBinding": false
+    },
+    "break": {
+      "requiresAncestor": ["ForOfStatement"],
+      "targetsNearestLoop": true,
+      "labels": false
+    },
+    "continue": {
+      "requiresAncestor": ["ForOfStatement"],
+      "targetsNearestLoop": true,
+      "labels": false
+    }
+  },
+  "calls": {
+    "knownFunctionsOnly": true,
+    "caseSensitive": true,
+    "calleeNode": "Identifier",
+    "methodCalls": false,
+    "argumentCount": "exact-contract-range",
+    "argumentTypes": "assignable-to-parameter",
+    "userDefinedFunctions": false
+  },
+  "objects": {
+    "keyKind": "Identifier",
+    "quotedKeys": false,
+    "duplicateProperties": "error",
+    "unknownConfigProperties": "error",
+    "requiredProperties": "error-when-missing",
+    "additionalPropertiesDefault": false,
+    "nativeObjectsReadOnly": true,
+    "localObjectsMutable": true
+  },
+  "arrays": {
+    "homogeneousInference": true,
+    "mixedElementTypes": "Unknown",
+    "indexType": "Number",
+    "nativeArraysReadOnly": true,
+    "localArraysMutable": true,
+    "iterableByForOf": true
+  },
+  "memberAccess": {
+    "nullableValueRequiresNarrowing": true,
+    "objectDotAccess": true,
+    "objectComputedAccess": "static-string-property",
+    "arrayComputedAccess": "number-index",
+    "unknownProperty": "error",
+    "methods": false
+  },
+  "nullNarrowing": {
+    "enabled": true,
+    "supportedPatterns": [
+      "identifier !== null",
+      "identifier === null",
+      "null !== identifier",
+      "null === identifier"
+    ],
+    "appliesTo": ["ifConsequent", "ifAlternate"]
+  },
+  "operators": {
+    "=": {
+      "left": "mutable-assignment-target",
+      "right": "assignable-to-left",
+      "returns": "left-type"
+    },
+    "+=": {
+      "acceptedPairs": [["String", "String"], ["Number", "Number"]],
+      "returns": "left-type"
+    },
+    "-=": {
+      "acceptedPairs": [["Number", "Number"]],
+      "returns": "Number"
+    },
+    "+": {
+      "acceptedPairs": [["String", "String"], ["Number", "Number"]],
+      "returnsByPair": {
+        "String,String": "String",
+        "Number,Number": "Number"
+      }
+    },
+    "-": { "acceptedPairs": [["Number", "Number"]], "returns": "Number" },
+    "*": { "acceptedPairs": [["Number", "Number"]], "returns": "Number" },
+    "/": { "acceptedPairs": [["Number", "Number"]], "returns": "Number" },
+    "%": { "acceptedPairs": [["Number", "Number"]], "returns": "Number" },
+    "<": { "acceptedPairs": [["String", "String"], ["Number", "Number"]], "returns": "Boolean" },
+    "<=": { "acceptedPairs": [["String", "String"], ["Number", "Number"]], "returns": "Boolean" },
+    ">": { "acceptedPairs": [["String", "String"], ["Number", "Number"]], "returns": "Boolean" },
+    ">=": { "acceptedPairs": [["String", "String"], ["Number", "Number"]], "returns": "Boolean" },
+    "===": { "acceptedPairs": "any", "returns": "Boolean" },
+    "!==": { "acceptedPairs": "any", "returns": "Boolean" },
+    "&&": { "acceptedPairs": [["Boolean", "Boolean"]], "returns": "Boolean", "shortCircuit": true },
+    "||": { "acceptedPairs": [["Boolean", "Boolean"]], "returns": "Boolean", "shortCircuit": true },
+    "!": { "acceptedOperand": "Boolean", "returns": "Boolean" },
+    "unary+": { "acceptedOperand": "Number", "returns": "Number" },
+    "unary-": { "acceptedOperand": "Number", "returns": "Number" },
+    "++": { "acceptedOperand": "mutable-number-target", "returns": "Number" },
+    "--": { "acceptedOperand": "mutable-number-target", "returns": "Number" }
+  },
+  "formats": {
+    "snowflake": {
+      "type": "String",
+      "pattern": "^\\d{17,20}$"
+    },
+    "hex-color": {
+      "type": "String",
+      "pattern": "^#[0-9A-Fa-f]{6}$"
+    },
+    "http-url": {
+      "type": "String",
+      "protocols": ["http:", "https:"]
+    }
+  },
+  "aggregateConstraints": {
+    "embedText": {
+      "types": ["SendEmbedConfig", "ReplyEmbedConfig"],
+      "properties": ["title", "description", "author.name", "footer.text"],
+      "maxTotalLength": 6000,
+      "diagnosticCode": "EMBED_TOO_LONG"
+    }
+  },
+  "diagnosticTemplates": {
+    "EMPTY_PROGRAM": "El programa requiere al menos una instrucción",
+    "DUPLICATE_DECLARATION": "La variable {name} ya fue declarada en este bloque",
+    "MISSING_INITIALIZER": "La variable {name} requiere un valor inicial",
+    "CONST_REASSIGNMENT": "No se puede reasignar la constante {name}",
+    "UNDEFINED_IDENTIFIER": "El identificador {name} no está declarado",
+    "INVALID_FOR_OF_DECLARATION": "for...of requiere exactamente una variable declarada con let o const",
+    "NOT_ITERABLE": "for...of requiere un array",
+    "INVALID_LOOP_CONTROL": "{keyword} solo puede utilizarse dentro de for...of",
+    "UNKNOWN_NATIVE_FUNCTION": "La función {name} no existe",
+    "INVALID_ARGUMENT_COUNT": "{name} recibió {actual} argumentos y espera {expected}",
+    "INCOMPATIBLE_ARGUMENT": "{parameter} requiere {expected} y recibió {actual}",
+    "DUPLICATE_PROPERTY": "La propiedad {name} está duplicada",
+    "UNKNOWN_CONFIG_PROPERTY": "{target} no admite la propiedad {name}",
+    "MISSING_CONFIG_PROPERTY": "{target} requiere la propiedad {name}",
+    "UNKNOWN_PROPERTY": "La propiedad {name} no existe",
+    "READ_ONLY_VALUE": "No se puede modificar un valor de solo lectura",
+    "NULLABLE_MEMBER_ACCESS": "Debe descartarse null antes de acceder a una propiedad",
+    "INVALID_SNOWFLAKE": "{target} no contiene un identificador de Discord válido",
+    "INVALID_COLOR": "{target} debe utilizar el formato #RRGGBB",
+    "INVALID_URL": "{target} debe ser una URL HTTP o HTTPS válida",
+    "STRING_TOO_SHORT": "{target} es demasiado corto",
+    "STRING_TOO_LONG": "{target} supera {maximum} caracteres",
+    "EMPTY_EMBED": "{target} requiere al menos un atributo propio del embed",
+    "EMBED_TOO_LONG": "El contenido total del embed supera 6000 caracteres"
+  }
+}

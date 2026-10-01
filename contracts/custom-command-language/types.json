@@ -1,0 +1,121 @@
+{
+  "schemaVersion": 1,
+  "languageVersion": "1.0.0",
+  "typeKinds": ["scalar", "object", "array", "union", "void"],
+  "types": {
+    "String": { "kind": "scalar" },
+    "Number": { "kind": "scalar" },
+    "Boolean": { "kind": "scalar" },
+    "Null": { "kind": "scalar", "literal": null },
+    "Void": { "kind": "void" },
+    "ChannelReference": {
+      "kind": "object",
+      "readOnly": true,
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "String", "required": true, "readOnly": true, "format": "snowflake" }
+      }
+    },
+    "RoleReference": {
+      "kind": "object",
+      "readOnly": true,
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "String", "required": true, "readOnly": true, "format": "snowflake" }
+      }
+    },
+    "Member": {
+      "kind": "object",
+      "readOnly": true,
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "String", "required": true, "readOnly": true, "format": "snowflake" },
+        "displayName": { "type": "String", "required": true, "readOnly": true },
+        "bot": { "type": "Boolean", "required": true, "readOnly": true },
+        "roles": { "type": "Array<RoleReference>", "required": true, "readOnly": true }
+      }
+    },
+    "EmbedAuthor": {
+      "kind": "object",
+      "readOnly": false,
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "String", "required": true, "minLength": 1, "maxLength": 256 },
+        "icon": { "type": "String", "required": false, "minLength": 1, "maxLength": 2048, "format": "http-url" },
+        "url": { "type": "String", "required": false, "minLength": 1, "maxLength": 2048, "format": "http-url" }
+      }
+    },
+    "EmbedFooter": {
+      "kind": "object",
+      "readOnly": false,
+      "additionalProperties": false,
+      "properties": {
+        "text": { "type": "String", "required": true, "minLength": 1, "maxLength": 2048 },
+        "icon": { "type": "String", "required": false, "minLength": 1, "maxLength": 2048, "format": "http-url" }
+      }
+    },
+    "SendMessageConfig": {
+      "kind": "object",
+      "readOnly": false,
+      "additionalProperties": false,
+      "properties": {
+        "channel": { "type": "ChannelReference", "required": false },
+        "message": { "type": "String", "required": true, "minLength": 1, "maxLength": 2000 }
+      }
+    },
+    "ReplyMessageConfig": {
+      "kind": "object",
+      "readOnly": false,
+      "additionalProperties": false,
+      "properties": {
+        "message": { "type": "String", "required": true, "minLength": 1, "maxLength": 2000 }
+      }
+    },
+    "SendEmbedConfig": {
+      "kind": "object",
+      "readOnly": false,
+      "additionalProperties": false,
+      "requiresAny": ["title", "description", "color", "url", "image", "author", "footer"],
+      "aggregateConstraints": ["embedText"],
+      "properties": {
+        "channel": { "type": "ChannelReference", "required": false },
+        "message": { "type": "String", "required": false, "minLength": 1, "maxLength": 2000 },
+        "title": { "type": "String", "required": false, "minLength": 1, "maxLength": 256 },
+        "description": { "type": "String", "required": false, "minLength": 1, "maxLength": 4096 },
+        "color": { "type": "String", "required": false, "format": "hex-color" },
+        "url": { "type": "String", "required": false, "minLength": 1, "maxLength": 2048, "format": "http-url" },
+        "image": { "type": "String", "required": false, "minLength": 1, "maxLength": 2048, "format": "http-url" },
+        "author": { "type": "EmbedAuthor", "required": false },
+        "footer": { "type": "EmbedFooter", "required": false }
+      }
+    },
+    "ReplyEmbedConfig": {
+      "kind": "object",
+      "readOnly": false,
+      "additionalProperties": false,
+      "requiresAny": ["title", "description", "color", "url", "image", "author", "footer"],
+      "aggregateConstraints": ["embedText"],
+      "properties": {
+        "message": { "type": "String", "required": false, "minLength": 1, "maxLength": 2000 },
+        "title": { "type": "String", "required": false, "minLength": 1, "maxLength": 256 },
+        "description": { "type": "String", "required": false, "minLength": 1, "maxLength": 4096 },
+        "color": { "type": "String", "required": false, "format": "hex-color" },
+        "url": { "type": "String", "required": false, "minLength": 1, "maxLength": 2048, "format": "http-url" },
+        "image": { "type": "String", "required": false, "minLength": 1, "maxLength": 2048, "format": "http-url" },
+        "author": { "type": "EmbedAuthor", "required": false },
+        "footer": { "type": "EmbedFooter", "required": false }
+      }
+    }
+  },
+  "genericTypes": {
+    "Array<T>": {
+      "kind": "array",
+      "elementType": "T",
+      "indexType": "Number"
+    },
+    "T | Null": {
+      "kind": "union",
+      "members": ["T", "Null"]
+    }
+  }
+}

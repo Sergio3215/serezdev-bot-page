@@ -1,0 +1,72 @@
+{
+  "schemaVersion": 1,
+  "languageVersion": "1.0.0",
+  "indentation": { "style": "space", "size": 4 },
+  "strings": {
+    "preferredQuote": "double",
+    "preserveValue": true,
+    "escapePreferredQuote": true
+  },
+  "statements": {
+    "onePerLine": true,
+    "semicolons": "omit",
+    "blankLines": { "maximumConsecutive": 2 }
+  },
+  "blocks": {
+    "openingBrace": "same-line",
+    "closingBrace": "own-line",
+    "emptyBlock": "multiline",
+    "elsePlacement": "same-line-after-closing-brace",
+    "elseIfPlacement": "same-line"
+  },
+  "spacing": {
+    "afterComma": true,
+    "beforeComma": false,
+    "aroundBinaryOperators": true,
+    "aroundLogicalOperators": true,
+    "aroundAssignmentOperators": true,
+    "afterKeywordsBeforeParenthesis": true,
+    "betweenFunctionNameAndParenthesis": false,
+    "insideParentheses": false,
+    "insideBrackets": false,
+    "insideInlineObjectBraces": true
+  },
+  "objects": {
+    "keys": "unquoted-identifiers",
+    "trailingComma": "multiline",
+    "propertyPerLineWhenMultiline": true
+  },
+  "arrays": {
+    "trailingComma": "multiline",
+    "elementPerLineWhenMultiline": true
+  },
+  "calls": {
+    "trailingComma": "multiline",
+    "argumentPerLineWhenMultiline": true
+  },
+  "parentheses": {
+    "preserveRequiredByPrecedence": true,
+    "removeRedundant": false
+  },
+  "comments": {
+    "preserve": true,
+    "requireTriviaOrConcreteSyntaxTree": true,
+    "lineCommentOwnLineWhenOriginallyOwnLine": true,
+    "blockCommentPreserveContent": true
+  },
+  "invalidSource": {
+    "strategy": "preserve-source",
+    "replaceEditorContent": false,
+    "returnDiagnostics": true
+  },
+  "properties": {
+    "idempotent": true,
+    "semanticPreserving": true
+  },
+  "examples": [
+    {
+      "input": "SendEmbed({channel:Channel(\"123456789012345678\"),title:'Hola',image:\"https://example.com/a.png\"})",
+      "output": "SendEmbed({\n    channel: Channel(\"123456789012345678\"),\n    title: \"Hola\",\n    image: \"https://example.com/a.png\",\n})"
+    }
+  ]
+}

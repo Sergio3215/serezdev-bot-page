@@ -1,0 +1,171 @@
+{
+  "schemaVersion": 1,
+  "languageVersion": "1.0.0",
+  "caseSensitive": true,
+  "lexical": {
+    "identifier": {
+      "startPattern": "[A-Za-z_]",
+      "partPattern": "[A-Za-z0-9_]",
+      "fullPattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+    },
+    "whitespace": {
+      "ignored": ["space", "tab", "formFeed", "verticalTab"],
+      "newlines": ["LF", "CRLF", "CR"],
+      "newlinesAreTokens": true
+    },
+    "comments": {
+      "line": { "open": "//", "endsAt": "newline" },
+      "block": { "open": "/*", "close": "*/", "nested": false },
+      "preserveAsTrivia": true
+    },
+    "strings": {
+      "quotes": ["\"", "'"],
+      "multiline": false,
+      "templateStrings": false,
+      "escapes": ["\\\\", "\\\"", "\\'", "\\n", "\\r", "\\t", "\\b", "\\f", "\\v", "\\0", "\\uFFFF"]
+    },
+    "numbers": {
+      "integer": true,
+      "decimal": true,
+      "leadingDecimalPoint": false,
+      "trailingDecimalPoint": false,
+      "exponent": false,
+      "signIsUnaryOperator": true
+    },
+    "keywords": {
+      "let": "LET",
+      "const": "CONST",
+      "if": "IF",
+      "else": "ELSE",
+      "for": "FOR",
+      "of": "OF",
+      "break": "BREAK",
+      "continue": "CONTINUE",
+      "true": "TRUE",
+      "false": "FALSE",
+      "null": "NULL"
+    },
+    "delimiters": {
+      "(": "LEFT_PAREN",
+      ")": "RIGHT_PAREN",
+      "{": "LEFT_BRACE",
+      "}": "RIGHT_BRACE",
+      "[": "LEFT_BRACKET",
+      "]": "RIGHT_BRACKET",
+      ",": "COMMA",
+      ".": "DOT",
+      ":": "COLON",
+      ";": "SEMICOLON"
+    },
+    "literals": ["String", "Number", "Boolean", "Null", "Object", "Array"]
+  },
+  "program": {
+    "minimumStatements": 1,
+    "statementSeparators": ["newline", "semicolon", "rightBrace", "eof"],
+    "semicolonOptional": true,
+    "newlinesIgnoredInside": ["parentheses", "objects", "arrays", "argumentLists"]
+  },
+  "statements": {
+    "BlockStatement": { "enabled": true, "open": "{", "close": "}" },
+    "VariableDeclaration": {
+      "enabled": true,
+      "kinds": ["let", "const"],
+      "multipleDeclarators": true,
+      "initializerRequired": true
+    },
+    "IfStatement": {
+      "enabled": true,
+      "conditionParenthesesRequired": true,
+      "bodyBlockRequired": true,
+      "elseIf": true,
+      "else": true
+    },
+    "ForOfStatement": {
+      "enabled": true,
+      "headerParenthesesRequired": true,
+      "bodyBlockRequired": true,
+      "declarationKinds": ["let", "const"],
+      "exactlyOneDeclarator": true,
+      "initializerProvidedByLoop": true
+    },
+    "BreakStatement": { "enabled": true, "onlyInside": "ForOfStatement", "labels": false },
+    "ContinueStatement": { "enabled": true, "onlyInside": "ForOfStatement", "labels": false },
+    "ExpressionStatement": { "enabled": true }
+  },
+  "expressions": {
+    "Identifier": { "enabled": true },
+    "StringLiteral": { "enabled": true },
+    "NumberLiteral": { "enabled": true },
+    "BooleanLiteral": { "enabled": true },
+    "NullLiteral": { "enabled": true },
+    "CallExpression": { "enabled": true, "callee": "Identifier", "trailingComma": true },
+    "ObjectExpression": {
+      "enabled": true,
+      "key": "Identifier",
+      "quotedKeys": false,
+      "computedKeys": false,
+      "shorthand": false,
+      "spread": false,
+      "trailingComma": true
+    },
+    "ArrayExpression": { "enabled": true, "spread": false, "holes": false, "trailingComma": true },
+    "MemberExpression": {
+      "enabled": true,
+      "dot": true,
+      "computed": true,
+      "chaining": true,
+      "optionalChaining": false,
+      "methodCalls": false
+    },
+    "BinaryExpression": { "enabled": true },
+    "LogicalExpression": { "enabled": true },
+    "UnaryExpression": { "enabled": true, "prefixOnly": true },
+    "AssignmentExpression": { "enabled": true, "associativity": "right" },
+    "UpdateExpression": { "enabled": true, "prefix": true, "postfix": true },
+    "ParenthesizedExpression": { "enabled": true, "representedByInnerNode": true }
+  },
+  "operators": {
+    "supported": ["=", "+=", "-=", "||", "&&", "===", "!==", "<", "<=", ">", ">=", "+", "-", "*", "/", "%", "!", "++", "--"],
+    "explicitlyUnsupported": {
+      "==": "Utilizar ===",
+      "!=": "Utilizar !=="
+    },
+    "precedenceHighToLow": [
+      { "group": "postfix", "operators": [".", "[]", "()", "postfix++", "postfix--"], "associativity": "left" },
+      { "group": "unary", "operators": ["!", "unary+", "unary-", "prefix++", "prefix--"], "associativity": "right" },
+      { "group": "multiplicative", "operators": ["*", "/", "%"], "associativity": "left" },
+      { "group": "additive", "operators": ["+", "-"], "associativity": "left" },
+      { "group": "comparison", "operators": ["<", "<=", ">", ">="], "associativity": "left" },
+      { "group": "equality", "operators": ["===", "!=="], "associativity": "left" },
+      { "group": "logicalAnd", "operators": ["&&"], "associativity": "left" },
+      { "group": "logicalOr", "operators": ["||"], "associativity": "left" },
+      { "group": "assignment", "operators": ["=", "+=", "-="], "associativity": "right" }
+    ]
+  },
+  "unsupportedConstructs": [
+    "var",
+    "functionDeclaration",
+    "functionExpression",
+    "arrowFunction",
+    "return",
+    "async",
+    "await",
+    "class",
+    "new",
+    "this",
+    "import",
+    "export",
+    "require",
+    "tryCatch",
+    "throw",
+    "switch",
+    "while",
+    "doWhile",
+    "classicFor",
+    "forIn",
+    "destructuring",
+    "spread",
+    "optionalChaining",
+    "templateString"
+  ]
+}
