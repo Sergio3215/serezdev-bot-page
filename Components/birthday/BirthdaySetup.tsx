@@ -4,6 +4,7 @@ import { birthdayType } from "@/types/Elements";
 import { useEffect, useState, useRef } from "react";
 import { useParams } from "next/navigation";
 import BirthdayCardEditor from "@/Components/birthday/BirthdayCardEditor";
+import { botApiUrl } from "@/lib/botApi";
 
 export default function BirthdaySetup() {
     const params = useParams();
@@ -25,7 +26,7 @@ export default function BirthdaySetup() {
 
         let isCancelled = false;
 
-        fetch(`${process.env.NEXT_PUBLIC_URL || "https://server-serez-dev-bot-production.up.railway.app"}/api/v1/birthday/setup?serverId=${idServer}`)
+        fetch(botApiUrl(idServer, "birthday/setup"))
             .then((res) => {
                 if (!res.ok) {
                     throw new Error(`Error ${res.status}`);
@@ -79,7 +80,7 @@ export default function BirthdaySetup() {
         setStatusFeedback(null);
 
         try {
-            const res = await fetch(`${process.env.NEXT_PUBLIC_URL || "https://server-serez-dev-bot-production.up.railway.app"}/api/v1/birthday/setup`, {
+            const res = await fetch(botApiUrl(idServer, "birthday/setup"), {
                 method: "PUT",
                 headers: {
                     "Content-Type": "application/json"

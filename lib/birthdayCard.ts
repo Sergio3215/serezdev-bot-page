@@ -1,3 +1,4 @@
+import { botApiUrl } from "@/lib/botApi";
 import {
     BIRTHDAY_CARD_VERSION,
     BirthdayCardConfig,
@@ -30,14 +31,12 @@ import { FONT_OPTIONS } from "@/lib/card/fonts";
 export { CANVAS_PRESETS, createTextLayer, loadEditorImage, newLayerId, FONT_OPTIONS };
 export type { LoadedImage };
 
-export const API_BASE = `${process.env.NEXT_PUBLIC_URL || "https://server-serez-dev-bot-production.up.railway.app"}/api/v1`;
-
 /**
  * Al lado de `/setup`, que es el mensaje de texto. Acá solo vive el diseño de la
  * imagen: el canal y el mensaje ya están guardados en la configuración de
  * cumpleaños, así que la imagen siempre viaja adjunta a ese mismo saludo.
  */
-export const BIRTHDAY_CARD_API = `${API_BASE}/birthday/setup-card`;
+const BIRTHDAY_CARD_PATH = "birthday/setup-card";
 
 /**
  * Las que ofrece el editor para insertar en una capa. Cuáles usa cada tarjeta lo
@@ -583,7 +582,7 @@ export async function fetchBirthdayCard(
     signal?: AbortSignal
 ): Promise<BirthdayCardResponse> {
     try {
-        const res = await fetch(`${BIRTHDAY_CARD_API}?serverId=${serverId}`, { signal });
+        const res = await fetch(botApiUrl(serverId, BIRTHDAY_CARD_PATH), { signal });
 
         if (res.status === 404) return { apiMissing: true, setup: null };
         if (!res.ok) return { apiMissing: false, setup: null, error: `Error ${res.status}` };
@@ -632,7 +631,7 @@ export async function saveBirthdayCard(setup: BirthdayCardSetup): Promise<SaveRe
     };
 
     try {
-        const res = await fetch(BIRTHDAY_CARD_API, {
+        const res = await fetch(botApiUrl(setup.serverId, BIRTHDAY_CARD_PATH), {
             method: isUpdate ? "PUT" : "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload),

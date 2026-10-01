@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { ServerPlanContext, useFetchServerPlan } from "@/lib/useServerPlan";
 import { canRestartBot } from "@/lib/plans";
+import { botApiUrl } from "@/lib/botApi";
 import Section from "@/Components/ui/Section";
 import ManageSetting from "@/Components/dashboard/ManageSettings";
 import ButtonDiscord from "@/Components/ui/ButtonDiscord";
@@ -57,7 +58,7 @@ export default function ServerDashboard({ filteredGuilds }: serverSelect) {
 
     const comprobateBirthdaySetup = async () => {
         try {
-            const ftch = await fetch(`${process.env.NEXT_PUBLIC_URL || "https://server-serez-dev-bot-production.up.railway.app"}/api/v1/birthday/setup?serverId=${idServer}`);
+            const ftch = await fetch(botApiUrl(idServer, "birthday/setup"));
             const dto = await ftch.json();
 
             if (dto.data && dto.data.length !== 0) {

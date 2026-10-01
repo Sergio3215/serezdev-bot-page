@@ -1,4 +1,5 @@
 import { ALWAYS_PREMIUM_SERVER_IDS } from "@/lib/plans";
+import { BOT_API_BASE, internalApiHeaders } from "@/lib/internalApi";
 import type { PlanId, SubscriptionState, SubscriptionUpsert, SubscriptionView } from "@/types/Billing";
 
 /**
@@ -17,14 +18,7 @@ import type { PlanId, SubscriptionState, SubscriptionUpsert, SubscriptionView } 
  *           `code` de las tablas correspondientes.
  */
 
-export const API_BASE = `${process.env.NEXT_PUBLIC_URL || "https://server-serez-dev-bot-production.up.railway.app"}/api/v1`;
-export const SUBSCRIPTION_API = `${API_BASE}/subscriptions`;
-
-/** Header opcional de secreto interno panel↔backend, si está configurado. */
-function authHeaders(): Record<string, string> {
-    const secret = process.env.INTERNAL_API_SECRET;
-    return secret ? { Authorization: `Bearer ${secret}` } : {};
-}
+export const SUBSCRIPTION_API = `${BOT_API_BASE}/subscriptions`;
 
 function rowToState(row: Record<string, unknown>, serverId: string): SubscriptionState {
     return {
@@ -39,7 +33,7 @@ function rowToState(row: Record<string, unknown>, serverId: string): Subscriptio
 export async function getSubscription(serverId: string): Promise<SubscriptionState | null> {
     const res = await fetch(`${SUBSCRIPTION_API}?serverId=${serverId}`, {
         cache: "no-store",
-        headers: authHeaders(),
+        headers: internalApiHeaders(),
     });
 
     // Endpoint todavía no creado en el backend → tratamos como "sin suscripción".
@@ -58,7 +52,7 @@ export async function getSubscription(serverId: string): Promise<SubscriptionSta
 export async function upsertSubscription(serverId: string, body: SubscriptionUpsert): Promise<void> {
     const res = await fetch(SUBSCRIPTION_API, {
         method: "POST",
-        headers: { "Content-Type": "application/json", ...authHeaders() },
+        headers: { "Content-Type": "application/json", ...internalApiHeaders() },
         body: JSON.stringify({ serverId, ...body }),
     });
 

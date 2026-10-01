@@ -1,3 +1,4 @@
+import { botApiUrl } from "@/lib/botApi";
 import {
     WELCOME_CARD_VERSION,
     WelcomeCardConfig,
@@ -26,13 +27,11 @@ import { FONT_OPTIONS } from "@/lib/card/fonts";
 export { CANVAS_PRESETS, createTextLayer, loadEditorImage, newLayerId, FONT_OPTIONS };
 export type { LoadedImage };
 
-export const API_BASE = `${process.env.NEXT_PUBLIC_URL || "https://server-serez-dev-bot-production.up.railway.app"}/api/v1`;
-
 /**
  * Vive bajo joinServer porque es la otra mitad de lo mismo: qué pasa cuando
  * alguien entra al servidor. `/setup` es el rol; `/setup-card`, la imagen.
  */
-export const WELCOME_CARD_API = `${API_BASE}/joinServer/setup-card`;
+const WELCOME_CARD_PATH = "joinServer/setup-card";
 
 export const TEMPLATE_VARIABLES = [
     { token: "{user}", description: "Apodo o nombre visible del miembro" },
@@ -297,7 +296,7 @@ export async function fetchWelcomeCard(
     signal?: AbortSignal
 ): Promise<WelcomeCardResponse> {
     try {
-        const res = await fetch(`${WELCOME_CARD_API}?serverId=${serverId}`, { signal });
+        const res = await fetch(botApiUrl(serverId, WELCOME_CARD_PATH), { signal });
 
         if (res.status === 404) return { apiMissing: true, setup: null };
         if (!res.ok) return { apiMissing: false, setup: null, error: `Error ${res.status}` };
@@ -350,7 +349,7 @@ export async function saveWelcomeCard(setup: WelcomeCardSetup): Promise<SaveResu
     };
 
     try {
-        const res = await fetch(WELCOME_CARD_API, {
+        const res = await fetch(botApiUrl(setup.serverId, WELCOME_CARD_PATH), {
             method: isUpdate ? "PUT" : "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload),

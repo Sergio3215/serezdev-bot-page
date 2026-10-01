@@ -5,13 +5,12 @@ import { useState, useEffect } from "react";
 import { avisoParaFuente, normalizeImageUrl } from "@/lib/imageUrl";
 import { useServerPlan } from "@/lib/useServerPlan";
 import { PLAN_LIMITS, PLANS } from "@/lib/plans";
-
-const API_URL = process.env.NEXT_PUBLIC_URL || "https://server-serez-dev-bot-production.up.railway.app";
+import { botApiUrl } from "@/lib/botApi";
 
 async function countCustomGifs(interactionNames: string[], serverId: string): Promise<number> {
     const results = await Promise.all(
         interactionNames.map((name) =>
-            fetch(`${API_URL}/api/v1/gif/getInteractionByName?name=${name}&serverId=${serverId}`)
+            fetch(botApiUrl(serverId, "gif/getInteractionByName", { name }))
                 .then((res) => res.json())
                 .then((res) => (res.data ?? []) as InteractionDataType[])
         )
@@ -89,7 +88,7 @@ export default function AddGifs({ interactions, idServer, goBack, defaultInterac
         };
 
         try {
-            const ftch = await fetch(`${process.env.NEXT_PUBLIC_URL || "https://server-serez-dev-bot-production.up.railway.app"}/api/v1/gif/addGif`, {
+            const ftch = await fetch(botApiUrl(idServer, "gif/addGif"), {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json"

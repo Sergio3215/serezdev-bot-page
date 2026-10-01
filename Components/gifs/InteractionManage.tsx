@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { useEffect, useState, useCallback } from "react";
 import AddGifs from "@/Components/gifs/AddGifs";
 import GifButtons from "@/Components/gifs/GifsButtons";
+import { botApiUrl } from "@/lib/botApi";
 
 
 export default function InteractionManage({ newFlag, setNewFlag }: interactionManage) {
@@ -17,7 +18,7 @@ export default function InteractionManage({ newFlag, setNewFlag }: interactionMa
 
     useEffect(() => {
         let isCancelled = false;
-        fetch(`${process.env.NEXT_PUBLIC_URL || "https://server-serez-dev-bot-production.up.railway.app"}/api/v1/gif/getInteractions`)
+        fetch(botApiUrl(idServer, "gif/getInteractions"))
             .then(res => res.json())
             .then(res => {
                 if (!isCancelled) {
@@ -32,11 +33,11 @@ export default function InteractionManage({ newFlag, setNewFlag }: interactionMa
         return () => {
             isCancelled = true;
         };
-    }, []);
+    }, [idServer]);
 
     const getGifs = useCallback(() => {
         if (!selectedInteraction) return;
-        fetch(`${process.env.NEXT_PUBLIC_URL || "https://server-serez-dev-bot-production.up.railway.app"}/api/v1/gif/getInteractionByName?name=${selectedInteraction}&serverId=${idServer}`)
+        fetch(botApiUrl(idServer, "gif/getInteractionByName", { name: selectedInteraction }))
             .then(res => res.json())
             .then(res => {
                 setGifsItems(res.data);

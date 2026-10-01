@@ -7,8 +7,7 @@ import { useParams } from "next/navigation";
 import RoleDropdown from "@/Components/ui/RoleDropdown";
 import WelcomeCardEditor from "@/Components/welcome/WelcomeCardEditor";
 import DiscordRefreshButton from "@/Components/ui/DiscordRefreshButton";
-
-const API_URL = `${process.env.NEXT_PUBLIC_URL || "https://server-serez-dev-bot-production.up.railway.app"}/api/v1/joinServer/setup`;
+import { botApiUrl } from "@/lib/botApi";
 
 export default function JoinServerSetup() {
     const params = useParams();
@@ -32,7 +31,7 @@ export default function JoinServerSetup() {
 
     const loadSetup = useCallback(async (signal: AbortSignal) => {
         try {
-            const res = await fetch(`${API_URL}?serverId=${idServer}`, { signal });
+            const res = await fetch(botApiUrl(idServer, "joinServer/setup"), { signal });
             if (!res.ok) throw new Error(`Error ${res.status}`);
 
             const dto = await res.json();
@@ -121,7 +120,7 @@ export default function JoinServerSetup() {
         const isUpdate = setup !== null;
 
         try {
-            const res = await fetch(API_URL, {
+            const res = await fetch(botApiUrl(idServer, "joinServer/setup"), {
                 method: isUpdate ? "PUT" : "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(
@@ -146,7 +145,7 @@ export default function JoinServerSetup() {
 
             // Tras crear, releemos para quedarnos con el id que necesita el PUT
             if (!isUpdate) {
-                const dto = await fetch(`${API_URL}?serverId=${idServer}`).then(r => r.json()).catch(() => null);
+                const dto = await fetch(botApiUrl(idServer, "joinServer/setup")).then(r => r.json()).catch(() => null);
                 setSetup(dto?.data?.[0] ?? { id: "", serverId: idServer, roleId: selectedRole });
                 setIsConfiguring(false);
             }

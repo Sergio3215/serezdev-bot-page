@@ -5,8 +5,13 @@ import ButtonDanger from "@/Components/ui/ButtonDanger";
 import ButtonDiscord from "@/Components/ui/ButtonDiscord";
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
+import { useParams } from "next/navigation";
+import { botApiUrl } from "@/lib/botApi";
 
 export default function GifButtons({ gifsItem, gifsArray, index }: gifButtons) {
+    const params = useParams();
+    const idServer = (params?.server as string) || "";
+
     const [edit, setEdit] = useState(false);
     const [deleteItem, setDeleteItem] = useState(false);
 
@@ -69,7 +74,7 @@ export default function GifButtons({ gifsItem, gifsArray, index }: gifButtons) {
         setErrorMsg("");
 
         try {
-            const ftch = await fetch(`${process.env.NEXT_PUBLIC_URL || "https://server-serez-dev-bot-production.up.railway.app"}/api/v1/gif/editGif`, {
+            const ftch = await fetch(botApiUrl(idServer, "gif/editGif"), {
                 method: "put",
                 headers: {
                     "Content-Type": "application/json"
@@ -110,7 +115,7 @@ export default function GifButtons({ gifsItem, gifsArray, index }: gifButtons) {
         setErrorMsg("");
 
         try {
-            const ftch = await fetch("https://server-serez-dev-bot-production.up.railway.app/api/v1/gif/deleteGif", {
+            const ftch = await fetch(botApiUrl(idServer, "gif/deleteGif"), {
                 method: "delete",
                 headers: {
                     "Content-Type": "application/json"
