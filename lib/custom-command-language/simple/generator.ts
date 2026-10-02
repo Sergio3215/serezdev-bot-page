@@ -34,6 +34,46 @@ export function referenceExpression(contract: LanguageContract, type: Type, id: 
     return null;
 }
 
+/**
+ * Marcadores que el modo simple acepta dentro de un texto, con la consulta que los reemplaza.
+ * `{mencionado}` se convierte en `"<@" + GetMentionedMember().id + ">"`, que Discord muestra como mención.
+ */
+export const TEXT_PLACEHOLDERS: Readonly<Record<string, string>> = {
+    autor: "GetAuthor",
+    mencionado: "GetMentionedMember",
+};
+
+const PLACEHOLDER_PATTERN = /\{([a-z]+)\}/g;
+const MENTION_OPEN = "<@";
+const MENTION_CLOSE = ">";
+
+/** Marcadores cuyo reemplazo existe en el contrato. */
+export function availablePlaceholders(contract: LanguageContract): string[] {
+    return Object.entries(TEXT_PLACEHOLDERS)
+        .filter(([, functionName]) => contract.functionByName.has(functionName))
+        .map(([name]) => name);
+}
+
+/** Texto del modo simple como expresión: literal, o concatenación si tiene marcadores. */
+function printText(contract: LanguageContract, text: string): string {
+    const available = new Set(availablePlaceholders(contract));
+    const quote = contract.formatter.quote;
+    const pieces: string[] = [];
+    let literal = "";
+    let cursor = 0;
+    for (const match of text.matchAll(PLACEHOLDER_PATTERN)) {
+        if (!available.has(match[1])) continue;
+        literal += text.slice(cursor, match.index) + MENTION_OPEN;
+        pieces.push(printString(literal, quote), `${TEXT_PLACEHOLDERS[match[1]]}().id`);
+        literal = MENTION_CLOSE;
+        cursor = (match.index ?? 0) + match[0].length;
+    }
+    literal += text.slice(cursor);
+    if (pieces.length === 0) return printString(literal, quote);
+    pieces.push(printString(literal, quote));
+    return pieces.join(" + ");
+}
+
 function printValue(contract: LanguageContract, type: Type, value: SimpleValue, path: string): string {
     if (type.kind === "object" && type.readOnly) {
         if (typeof value !== "string") throw new SimpleModelError(`${path} espera el ID elegido`);
@@ -47,7 +87,7 @@ function printValue(contract: LanguageContract, type: Type, value: SimpleValue, 
     }
     if (type.name === "String") {
         if (typeof value !== "string") throw new SimpleModelError(`${path} espera texto`);
-        return printString(value, contract.formatter.quote);
+        return printText(contract, value);
     }
     throw new SimpleModelError(`${path}: el modo simple no genera valores ${type.name}`);
 }

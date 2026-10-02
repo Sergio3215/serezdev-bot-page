@@ -3,7 +3,7 @@
 import ChannelDropdown from "@/Components/ui/ChannelDropdown";
 import MemberSearch from "@/Components/ui/MemberSearch";
 import RoleDropdown from "@/Components/ui/RoleDropdown";
-import { contextSources, languageService, queryResolver, simpleShape, sourceOf, type Diagnostic, type Program, type SimpleAction, type SimpleValue } from "@/lib/custom-command-language";
+import { TEXT_PLACEHOLDERS, availablePlaceholders, contextSources, languageService, queryResolver, simpleShape, sourceOf, type Diagnostic, type Program, type SimpleAction, type SimpleValue } from "@/lib/custom-command-language";
 import type { ObjectType, PropertyDefinition, Type } from "@/lib/custom-command-language/contract/model";
 import type { DiscordChannel, DiscordRole } from "@/types/DiscordTypes";
 
@@ -212,6 +212,54 @@ interface FieldsProps {
     idPrefix: string;
 }
 
+/** Campos donde Discord muestra las menciones: el texto del mensaje y la descripción de la tarjeta. */
+const MENTION_FIELDS = new Set(["message", "description"]);
+
+const PLACEHOLDER_LABELS: Record<string, string> = {
+    autor: "@ Quien escribe el comando",
+    mencionado: "@ Persona mencionada",
+};
+
+/** Inserta `{autor}` o `{mencionado}` en la posición del cursor del campo. */
+function MentionButtons({ fieldId, text, onChange }: { fieldId: string; text: string; onChange: (value: string) => void }) {
+    const placeholders = availablePlaceholders(contract);
+    const insert = (placeholder: string) => {
+        const element = document.getElementById(fieldId) as HTMLInputElement | HTMLTextAreaElement | null;
+        const token = `{${placeholder}}`;
+        const start = element?.selectionStart ?? text.length;
+        const end = element?.selectionEnd ?? text.length;
+        onChange(text.slice(0, start) + token + text.slice(end));
+        requestAnimationFrame(() => {
+            element?.focus();
+            element?.setSelectionRange(start + token.length, start + token.length);
+        });
+    };
+    const requiresMention = placeholders.some((placeholder) =>
+        text.includes(`{${placeholder}}`) && contract.functionByName.get(TEXT_PLACEHOLDERS[placeholder])?.requires.includes("mention")
+    );
+    return (
+        <div className="space-y-1.5">
+            <div className="flex flex-wrap gap-1.5">
+                {placeholders.map((placeholder) => (
+                    <button
+                        key={placeholder}
+                        type="button"
+                        onClick={() => insert(placeholder)}
+                        className="rounded-md border border-white/10 bg-white/5 px-2 py-1 text-[11px] text-zinc-300 hover:bg-white/10 cursor-pointer"
+                    >
+                        {PLACEHOLDER_LABELS[placeholder] ?? `{${placeholder}}`}
+                    </button>
+                ))}
+            </div>
+            {requiresMention && (
+                <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-2 text-[11px] text-amber-200">
+                    Al usar {"{mencionado}"}, el comando va a exigir que se mencione a alguien. Sin mención, el bot responde un error y no hace nada.
+                </p>
+            )}
+        </div>
+    );
+}
+
 function Field({ property, value, onChange, channels, roles, idPrefix }: {
     property: PropertyDefinition;
     value: SimpleValue;
@@ -329,6 +377,9 @@ function Field({ property, value, onChange, channels, roles, idPrefix }: {
                     onChange={(event) => onChange(event.target.value)}
                     className={inputClass}
                 />
+            )}
+            {MENTION_FIELDS.has(property.name) && !property.format && (
+                <MentionButtons fieldId={id} text={text} onChange={onChange} />
             )}
         </div>
     );

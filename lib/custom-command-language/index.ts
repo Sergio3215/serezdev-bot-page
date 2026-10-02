@@ -17,7 +17,7 @@ export {
     type LanguageService,
     type SignatureHelpResult,
 } from "./ide/languageService";
-export { SimpleModelError, contextSources, queryResolver, simpleShape, sourceOf, type SimpleAction, type SimpleShape, type SimpleValue } from "./simple/generator";
+export { SimpleModelError, TEXT_PLACEHOLDERS, availablePlaceholders, contextSources, queryResolver, simpleShape, sourceOf, type SimpleAction, type SimpleShape, type SimpleValue } from "./simple/generator";
 export { printString } from "./formatter/stringPrinter";
 export { highlightRanges, type HighlightKind, type HighlightRange } from "./ide/highlight";
 

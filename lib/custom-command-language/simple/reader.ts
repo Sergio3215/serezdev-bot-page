@@ -3,7 +3,7 @@ import { format } from "../formatter/formatter";
 import type { CallExpression, Expression, Statement } from "../parser/ast";
 import { parse } from "../parser/parser";
 import { tokenize } from "../tokenizer/tokenizer";
-import { contextSources, generateSource, queryResolver, simpleShape, type SimpleAction, type SimpleValue } from "./generator";
+import { TEXT_PLACEHOLDERS, contextSources, generateSource, queryResolver, simpleShape, type SimpleAction, type SimpleValue } from "./generator";
 
 /** Recurso dinámico cuya función genera el tipo de referencia indicado. */
 function referenceFunction(contract: LanguageContract, type: Type): string | null {
@@ -20,11 +20,47 @@ function idArgument(node: Expression, functionName: string | null): string | und
     return id.type === "StringLiteral" && !id.parens ? id.value : undefined;
 }
 
+const SENTINEL = String.fromCharCode(0);
+const MENTION_PATTERN = new RegExp(`<@${SENTINEL}([a-z]+)${SENTINEL}>`, "g");
+
+/** Texto del modo simple a partir de un literal o de una concatenación con menciones (`"<@" + GetAuthor().id + ">"`). */
+function readText(contract: LanguageContract, node: Expression): string | undefined {
+    const placeholderByFunction = new Map(Object.entries(TEXT_PLACEHOLDERS).map(([name, functionName]) => [functionName, name]));
+    const terms: Expression[] = [];
+    const flatten = (expression: Expression): void => {
+        if (expression.type === "BinaryExpression" && expression.operator === "+" && !expression.parens) {
+            flatten(expression.left);
+            flatten(expression.right);
+        } else {
+            terms.push(expression);
+        }
+    };
+    flatten(node);
+
+    let text = "";
+    for (const term of terms) {
+        if (term.type === "StringLiteral" && !term.parens) {
+            text += term.value;
+            continue;
+        }
+        const object = term.type === "MemberExpression" && !term.computed && !term.parens ? term.object : null;
+        const placeholder = object?.type === "CallExpression" && object.arguments.length === 0 && !object.parens
+            && term.type === "MemberExpression" && term.property.type === "Identifier" && term.property.name === "id"
+            && contract.functionByName.has(object.callee.name)
+            ? placeholderByFunction.get(object.callee.name)
+            : undefined;
+        if (!placeholder) return undefined;
+        text += SENTINEL + placeholder + SENTINEL;
+    }
+    const result = text.replace(MENTION_PATTERN, "{$1}");
+    return result.includes(SENTINEL) ? undefined : result;
+}
+
 function readValue(contract: LanguageContract, type: Type, node: Expression): SimpleValue | undefined {
     if (node.parens) return undefined;
     if (type.kind === "object" && type.readOnly) return idArgument(node, referenceFunction(contract, type));
     if (type.kind === "object") return node.type === "ObjectExpression" ? readObject(contract, type, node) : undefined;
-    if (type.name === "String") return node.type === "StringLiteral" ? node.value : undefined;
+    if (type.name === "String") return readText(contract, node);
     return undefined;
 }
 

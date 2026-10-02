@@ -399,6 +399,16 @@ if (HasRole(author, role)) {
     })
 }
 `} />
+                        <Sub>Mencionar a alguien en el mensaje</Sub>
+                        <P>
+                            Discord muestra como mención cualquier texto con la forma <C>{"<@ID>"}</C>. Se arma uniendo el ID con <C>+</C>. Funciona en el mensaje y en la descripción de una tarjeta. En el modo simple es lo mismo que escribir <C>{"{autor}"}</C> o <C>{"{mencionado}"}</C>.
+                        </P>
+                        <CodeBlock code={`
+AddRole(GetMentionedMember(), Role("371826690424569866"))
+ReplyMessage({
+    message: "<@" + GetAuthor().id + "> le dio el rol a <@" + GetMentionedMember().id + ">",
+})
+`} />
                         <Sub>Solo un rol puede usar el comando</Sub>
                         <P>La autorización se comprueba sobre quien escribe (<C>GetAuthor()</C>), nunca sobre la persona mencionada.</P>
                         <CodeBlock code={`
