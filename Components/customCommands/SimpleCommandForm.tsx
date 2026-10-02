@@ -216,8 +216,8 @@ interface FieldsProps {
 const MENTION_FIELDS = new Set(["message", "description"]);
 
 const PLACEHOLDER_LABELS: Record<string, string> = {
-    autor: "@ Quien escribe el comando",
-    mencionado: "@ Persona mencionada",
+    autor: "@autor",
+    mencionado: "@mencionado",
 };
 
 /** Inserta `{autor}` o `{mencionado}` en la posición del cursor del campo. */

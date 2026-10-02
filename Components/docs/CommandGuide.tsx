@@ -78,7 +78,13 @@ export default function CommandGuide() {
         <div className="min-h-screen bg-[#0a0a0f] text-white selection:bg-[#5865F2]">
             <header className="sticky top-0 z-20 border-b border-white/10 bg-[#0a0a0f]/90 backdrop-blur">
                 <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
-                    <Link href="/dashboard" className="text-sm text-zinc-400 hover:text-white">&larr; Volver al panel</Link>
+                    <Link href="/" aria-label="Inicio" title="Inicio" className="flex items-center gap-1.5 text-sm text-zinc-400 hover:text-white">
+                        <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M3 10.5 12 3l9 7.5" />
+                            <path d="M5 9.5V21h5v-6h4v6h5V9.5" />
+                        </svg>
+                        Inicio
+                    </Link>
                     <span className="text-sm font-semibold text-zinc-200">Guía de comandos personalizados</span>
                 </div>
             </header>

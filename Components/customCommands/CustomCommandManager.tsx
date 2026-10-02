@@ -111,6 +111,15 @@ export default function CustomCommandManager({ editing, setEditing }: CustomComm
         return () => controller.abort();
     }, [idServer, loadCommands]);
 
+    useEffect(() => {
+        if (!pendingDelete) return;
+        const close = (event: KeyboardEvent) => {
+            if (event.key === "Escape") setPendingDelete(null);
+        };
+        window.addEventListener("keydown", close);
+        return () => window.removeEventListener("keydown", close);
+    }, [pendingDelete]);
+
     const deferredCode = useDeferredValue(draft?.code ?? "");
     const analysis = useMemo(() => (draft ? languageService.analyze(deferredCode) : null), [draft, deferredCode]);
 
@@ -415,24 +424,57 @@ export default function CustomCommandManager({ editing, setEditing }: CustomComm
                                 <button type="button" onClick={() => openExisting(command)} className="rounded-lg px-3 py-1.5 text-xs text-zinc-200 hover:bg-white/5 cursor-pointer">
                                     Editar
                                 </button>
-                                {pendingDelete?.id === command.id ? (
-                                    <>
-                                        <button type="button" onClick={() => remove(command)} className="rounded-lg bg-red-500/15 px-3 py-1.5 text-xs font-semibold text-red-300 hover:bg-red-500/25 cursor-pointer">
-                                            Confirmar
-                                        </button>
-                                        <button type="button" onClick={() => setPendingDelete(null)} className="rounded-lg px-3 py-1.5 text-xs text-zinc-400 hover:bg-white/5 cursor-pointer">
-                                            Cancelar
-                                        </button>
-                                    </>
-                                ) : (
-                                    <button type="button" onClick={() => setPendingDelete(command)} className="rounded-lg px-3 py-1.5 text-xs text-red-300 hover:bg-red-500/10 cursor-pointer">
-                                        Borrar
-                                    </button>
-                                )}
+                                <button type="button" onClick={() => setPendingDelete(command)} className="rounded-lg px-3 py-1.5 text-xs text-red-300 hover:bg-red-500/10 cursor-pointer">
+                                    Borrar
+                                </button>
                             </div>
                         </li>
                     ))}
                 </ul>
+            )}
+
+            {pendingDelete && (
+                <div
+                    className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm"
+                    onClick={(event) => {
+                        if (event.target === event.currentTarget) setPendingDelete(null);
+                    }}
+                >
+                    <div
+                        role="alertdialog"
+                        aria-modal="true"
+                        aria-labelledby="delete-command-title"
+                        className="w-full max-w-md space-y-5 rounded-2xl border border-white/10 bg-[#1e1f22] p-6 text-white shadow-2xl sm:p-7"
+                    >
+                        <div className="flex items-center gap-3 border-b border-white/10 pb-3">
+                            <div className="rounded-xl border border-red-500/20 bg-red-500/10 p-2.5 text-xl text-red-400">🗑️</div>
+                            <div>
+                                <h3 id="delete-command-title" className="text-lg font-bold tracking-tight">Borrar comando</h3>
+                                <p className="text-xs text-zinc-400">Esta acción no se puede deshacer</p>
+                            </div>
+                        </div>
+                        <p className="text-sm leading-relaxed text-zinc-300">
+                            ¿Seguro que querés borrar el comando &quot;<span className="font-mono font-semibold text-white">{pendingDelete.command}</span>&quot;? El bot no volverá a reconocerlo.
+                        </p>
+                        <div className="flex gap-2 pt-1">
+                            <button
+                                type="button"
+                                autoFocus
+                                onClick={() => setPendingDelete(null)}
+                                className="flex-1 rounded-xl border border-white/15 bg-white/5 py-2.5 text-xs font-semibold text-zinc-200 hover:bg-white/10 cursor-pointer"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => remove(pendingDelete)}
+                                className="flex-1 rounded-xl bg-[#da373c] py-2.5 text-xs font-semibold text-white shadow-lg shadow-red-500/20 hover:bg-[#a12828] cursor-pointer"
+                            >
+                                Borrar
+                            </button>
+                        </div>
+                    </div>
+                </div>
             )}
         </div>
     );
