@@ -7,16 +7,21 @@ import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useParams } from "next/navigation";
 import { botApiUrl } from "@/lib/botApi";
+import { defaultGifUrl } from "@/lib/gifs";
+import { PLAN_LIMITS } from "@/lib/plans";
+import { useServerPlan } from "@/lib/useServerPlan";
 
 export default function GifButtons({ gifsItem, gifsArray, index }: gifButtons) {
     const params = useParams();
     const idServer = (params?.server as string) || "";
+    const plan = useServerPlan();
 
     const [edit, setEdit] = useState(false);
     const [deleteItem, setDeleteItem] = useState(false);
 
     const [id, setId] = useState("");
     const [url, setUrl] = useState(gifsItem.url || "");
+    const [savedUrl, setSavedUrl] = useState(gifsItem.url || "");
     const [errorMsg, setErrorMsg] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const [isDeleted, setIsDeleted] = useState(false);
@@ -81,18 +86,21 @@ export default function GifButtons({ gifsItem, gifsArray, index }: gifButtons) {
                 },
                 body: JSON.stringify({
                     url: trimmedUrl,
-                    id: idItem
+                    id: idItem,
+                    interaction: gifsArray.name
                 })
             });
 
             if (!ftch.ok) {
-                throw new Error("No se pudo actualizar el GIF.");
+                const data = await ftch.json().catch(() => ({}));
+                throw new Error(data.error || data.message || "No se pudo actualizar el GIF.");
             }
 
             await ftch.text();
 
             // Actualizar el estado local
             setUrl(trimmedUrl);
+            setSavedUrl(trimmedUrl);
 
             // Actualizar la imagen directamente en el DOM para reflejar el cambio en pantalla
             const parentCard = containerRef.current?.closest(".m-5") as HTMLElement | null;
@@ -168,36 +176,52 @@ export default function GifButtons({ gifsItem, gifsArray, index }: gifButtons) {
     }
 
     const isLast = gifsArray?.gifs?.length === index + 1;
+    const isDefault = gifsItem.type === "default";
+    const canEdit = !isDefault || (plan !== null && PLAN_LIMITS[plan].editDefaultGifs);
+    const originalUrl = defaultGifUrl(gifsArray.name, gifsItem.order);
+    const canRestore = isDefault && savedUrl !== originalUrl;
 
     return (
         <div ref={containerRef}>
-            {
-                !gifsItem.url.includes("git") && (
-                    <div className="flex flex-row gap-2">
+            {(canEdit || canRestore || (!isDefault && isLast)) && (
+                <div className="flex flex-row flex-wrap justify-center gap-2">
+                    {canEdit && (
                         <ButtonDiscord
                             title="Editar"
                             onClick={() => {
                                 setId(gifsItem.id);
-                                setUrl(gifsItem.url || "");
+                                setUrl(savedUrl);
                                 setErrorMsg("");
                                 setEdit(true);
                             }}
                         />
-                        {
-                            isLast && (
-                                <ButtonDanger
-                                    title="Borrar"
-                                    onClick={() => {
-                                        setId(gifsItem.id);
-                                        setErrorMsg("");
-                                        setDeleteItem(true);
-                                    }}
-                                />
-                            )
-                        }
-                    </div>
-                )
-            }
+                    )}
+                    {canRestore && (
+                        <button
+                            type="button"
+                            disabled={isLoading}
+                            onClick={() => handlerEdit(gifsItem.id, originalUrl)}
+                            title="Volver al GIF original del bot"
+                            className="mb-2 rounded-xl border border-white/15 bg-white/5 px-4 py-4 text-xs font-semibold text-zinc-200 transition-all hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
+                        >
+                            {isLoading && !edit ? "Restaurando..." : "Restaurar"}
+                        </button>
+                    )}
+                    {!isDefault && isLast && (
+                        <ButtonDanger
+                            title="Borrar"
+                            onClick={() => {
+                                setId(gifsItem.id);
+                                setErrorMsg("");
+                                setDeleteItem(true);
+                            }}
+                        />
+                    )}
+                </div>
+            )}
+            {errorMsg && !edit && !deleteItem && (
+                <p className="mt-1 text-center text-[11px] text-red-300">{errorMsg}</p>
+            )}
 
             {/* Modal de Edición de URL renderizado en el body para evitar recorte por transformaciones del padre */}
             {

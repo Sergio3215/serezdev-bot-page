@@ -53,6 +53,7 @@ export const PLANS: Record<PlanId, Plan> = {
             "Todo lo de Pro",
             "Tarjetas con fondo de imagen",
             "GIFs personalizados ilimitados",
+            "Editar los GIFs por defecto",
             "Comandos personalizados ilimitados",
             "Plantillas exclusivas de tarjetas",
             "Prioridad de soporte",
@@ -71,10 +72,16 @@ export const CARD_BACKGROUND_UNLOCKED_SERVER_IDS = ["748652112485023854"];
  * sumando todas las interacciones; `customCommands`, el total de comandos personalizados
  * creados, activos o no (null = sin límite).
  */
-export const PLAN_LIMITS: Record<PlanId, { customGifs: number | null; customCommands: number | null; cardBackgrounds: BackgroundType[]; botRestart: boolean }> = {
-    free: { customGifs: 5, customCommands: 4, cardBackgrounds: ["color"], botRestart: false },
-    pro: { customGifs: 10, customCommands: 15, cardBackgrounds: ["color", "gradient"], botRestart: true },
-    premium: { customGifs: null, customCommands: null, cardBackgrounds: ["color", "gradient", "image"], botRestart: true },
+export const PLAN_LIMITS: Record<PlanId, {
+    customGifs: number | null;
+    customCommands: number | null;
+    cardBackgrounds: BackgroundType[];
+    botRestart: boolean;
+    editDefaultGifs: boolean;
+}> = {
+    free: { customGifs: 5, customCommands: 4, cardBackgrounds: ["color"], botRestart: false, editDefaultGifs: false },
+    pro: { customGifs: 10, customCommands: 15, cardBackgrounds: ["color", "gradient"], botRestart: true, editDefaultGifs: false },
+    premium: { customGifs: null, customCommands: null, cardBackgrounds: ["color", "gradient", "image"], botRestart: true, editDefaultGifs: true },
 };
 
 /** Servidores que pueden reiniciar el bot aunque sean Free. */

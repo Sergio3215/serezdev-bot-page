@@ -18,7 +18,7 @@ const PLAN_BADGE: Record<PlanId, string> = {
     premium: "border-amber-500/40 bg-amber-500/15 text-amber-300",
 };
 
-export default function ServerDashboard({ filteredGuilds }: serverSelect) {
+export default function ServerDashboard({ filteredGuilds, loadingGuilds }: serverSelect) {
     const params = useParams();
     const idServer = (params?.server as string) || "";
 
@@ -74,16 +74,43 @@ export default function ServerDashboard({ filteredGuilds }: serverSelect) {
 
     // console.log(filteredGuilds);
 
+    if (idServer && loadingGuilds && !filteredGuilds.some((guild) => guild.id === idServer)) {
+        return (
+            <div className="mt-24 flex flex-col items-center gap-4">
+                <div className="h-10 w-10 animate-spin rounded-full border-4 border-[#5865F2] border-t-transparent"></div>
+                <p className="text-sm text-zinc-400">Cargando el servidor...</p>
+            </div>
+        );
+    }
+
+    if (idServer && !loadingGuilds && !filteredGuilds.some((guild) => guild.id === idServer)) {
+        return (
+            <div className="mx-auto mt-16 max-w-md space-y-4 rounded-2xl border border-white/10 bg-[#1e1f22] p-6 text-center">
+                <h2 className="text-lg font-bold text-white">No se pudo cargar este servidor</h2>
+                <p className="text-sm text-zinc-400">
+                    Discord no devolvió este servidor en tu lista. Puede ser un corte momentáneo o que tu sesión haya vencido.
+                </p>
+                <div className="flex gap-2">
+                    <Link href="/dashboard" className="flex-1 rounded-xl border border-white/15 bg-white/5 py-2.5 text-xs font-semibold text-zinc-200 hover:bg-white/10">
+                        Mis servidores
+                    </Link>
+                    <button
+                        type="button"
+                        onClick={() => window.location.reload()}
+                        className="flex-1 rounded-xl bg-[#5865F2] py-2.5 text-xs font-semibold text-white hover:bg-[#4752c4] cursor-pointer"
+                    >
+                        Recargar
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <ServerPlanContext.Provider value={plan}>
             {
                 idServer !== "" && (
                     <div>
-                        {
-                            state == "" && (
-                                <Link href="/dashboard" className="cursor-pointer hover:underline underline-offset-4 relative bottom-3.5"> &larr; Atras</Link>
-                            )
-                        }
                         {filteredGuilds.map((ser) => {
                             if (ser.id !== idServer) return null;
                             return (
@@ -113,6 +140,11 @@ export default function ServerDashboard({ filteredGuilds }: serverSelect) {
                                         <hr className="mt-4 border-white/10" />
                                     </div>
                                     <div className="flex flex-col">
+                                        {state == "" && (
+                                            <div className="mb-6">
+                                                <Link href="/dashboard" className="cursor-pointer hover:underline underline-offset-4"> &larr; Atras</Link>
+                                            </div>
+                                        )}
                                         <div className="flex flex-row flex-wrap gap-6 justify-center items-start">
                                             {
                                                 state == "" && (

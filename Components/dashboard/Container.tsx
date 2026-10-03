@@ -11,6 +11,8 @@ import ServerDashboard from "@/Components/dashboard/ServerDashboard";
 import { ContainerProps } from "@/types/Elements"
 
 
+const MAX_GUILD_RETRIES = 3;
+
 export default function Container({ children, site }: ContainerProps) {
     const router = useRouter();
     const [user, setUser] = useState<DiscordUser | null>(null);
@@ -59,30 +61,45 @@ export default function Container({ children, site }: ContainerProps) {
     useEffect(() => {
         if (!user) return;
 
+        let cancelled = false;
+
+        /** Discord limita mucho la lista de servidores: ante un 429 espera lo que indica y reintenta. */
         async function fetchGuilds() {
             setLoadingGuilds(true);
             try {
-                const res = await fetch("/api/guilds");
-                const data = await res.json();
+                for (let attempt = 0; attempt <= MAX_GUILD_RETRIES; attempt++) {
+                    const res = await fetch("/api/guilds", { cache: "no-store" });
+                    const data = await res.json().catch(() => ({}));
+                    if (cancelled) return;
 
-                // Si falta el scope 'guilds' del login previo, redirigir automáticamente para actualizar credenciales
-                if (res.status === 401 && data.needsReauth) {
-                    window.location.href = reauthUrl;
-                    return;
-                }
+                    // Si falta el scope 'guilds' del login previo, redirigir automáticamente para actualizar credenciales
+                    if (res.status === 401 && data.needsReauth) {
+                        window.location.href = reauthUrl;
+                        return;
+                    }
 
-                if (res.ok) {
-                    setBotGuilds(data.botGuilds || []);
-                    setOtherAdminGuilds(data.otherAdminGuilds || []);
+                    if (res.ok) {
+                        setBotGuilds(data.botGuilds || []);
+                        setOtherAdminGuilds(data.otherAdminGuilds || []);
+                        return;
+                    }
+
+                    if (res.status !== 429 || attempt === MAX_GUILD_RETRIES) return;
+                    const seconds = Math.min(Math.max(Number(data.retryAfter) || 1, 0.5), 10);
+                    await new Promise((resolve) => setTimeout(resolve, seconds * 1000));
+                    if (cancelled) return;
                 }
             } catch (err) {
                 console.error("Error al consultar servidores:", err);
             } finally {
-                setLoadingGuilds(false);
+                if (!cancelled) setLoadingGuilds(false);
             }
         }
 
         fetchGuilds();
+        return () => {
+            cancelled = true;
+        };
     }, [user, reauthUrl]);
 
     const handleLogout = async () => {
@@ -175,7 +192,7 @@ export default function Container({ children, site }: ContainerProps) {
 
                 {
                     site === "server" && (
-                        <ServerDashboard filteredGuilds={filteredGuilds} />
+                        <ServerDashboard filteredGuilds={filteredGuilds} loadingGuilds={loadingGuilds} />
                     )
                 }
 

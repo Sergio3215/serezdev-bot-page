@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 // import { after } from "next/server";
 import { checkGuildAdmin } from "@/lib/guildAccess";
 import { BOT_API_BASE, internalApiHeaders } from "@/lib/internalApi";
+import { defaultGifUrl } from "@/lib/gifs";
 import { PLAN_LIMITS, PLANS } from "@/lib/plans";
 // import { scheduleBotRestart } from "@/lib/railway";
 import { getServerPlanView } from "@/lib/subscriptions";
@@ -72,6 +73,33 @@ async function customCommandLimitError(serverId: string, action: "create" | "act
     }
 }
 
+/**
+ * Editar un GIF: tiene que pertenecer a la interacción indicada de este servidor. Los GIFs por
+ * defecto solo se editan con Premium; volver a su URL original se permite en cualquier plan.
+ */
+async function gifEditError(serverId: string, body: { id?: unknown; url?: unknown; interaction?: unknown }): Promise<{ error: string; status: number } | null> {
+    if (typeof body.id !== "string" || typeof body.url !== "string" || typeof body.interaction !== "string") {
+        return { error: "Faltan datos del GIF.", status: 400 };
+    }
+    try {
+        const url = new URL(`${BOT_API_BASE}/gif/getInteractionByName`);
+        url.searchParams.set("name", body.interaction);
+        url.searchParams.set("serverId", serverId);
+        const res = await fetch(url, { headers: internalApiHeaders(), cache: "no-store" });
+        if (!res.ok) throw new Error(`El backend respondió ${res.status}`);
+        const data: { data?: { gifs?: { id: string; order: number; type: string }[] }[] } = await res.json();
+        const gif = (data.data ?? []).flatMap((interaction) => interaction.gifs ?? []).find((item) => item.id === body.id);
+        if (!gif) return { error: "No se encontró el GIF.", status: 404 };
+        if (gif.type !== "default" || body.url === defaultGifUrl(body.interaction, gif.order)) return null;
+        const plan = (await getServerPlanView(serverId)).plan;
+        if (PLAN_LIMITS[plan].editDefaultGifs) return null;
+        return { error: "Editar los GIFs por defecto está disponible en el plan Premium.", status: 403 };
+    } catch (err) {
+        console.error("[backend proxy] no se pudo verificar el GIF:", err);
+        return { error: "No se pudo verificar el GIF.", status: 502 };
+    }
+}
+
 async function proxy(request: NextRequest, { params }: Context, method: Method) {
     const { server: serverId, path } = await params;
     const endpoint = path.join("/");
@@ -129,6 +157,10 @@ async function proxy(request: NextRequest, { params }: Context, method: Method) 
     const limitAction = method === "POST" && endpointKey(path) === "customCommand" ? "create"
         : method === "PATCH" && endpointKey(path) === "customCommand/:id/status" && JSON.parse(body ?? "{}").enabled === true ? "activate"
         : null;
+    if (method === "PUT" && endpointKey(path) === "gif/editGif") {
+        const gifError = await gifEditError(serverId, JSON.parse(body ?? "{}"));
+        if (gifError) return NextResponse.json({ error: gifError.error, message: gifError.error }, { status: gifError.status });
+    }
     if (limitAction) {
         const limit = await customCommandLimitError(serverId, limitAction);
         if (limit) return NextResponse.json({ error: limit.error, message: limit.error }, { status: limit.status });

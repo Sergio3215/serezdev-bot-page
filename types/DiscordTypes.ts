@@ -33,6 +33,7 @@ export type currentUser = {
 
 export interface serverSelect {
     filteredGuilds: DiscordGuild[];
+    loadingGuilds: boolean;
 }
 
 export interface DiscordRole {

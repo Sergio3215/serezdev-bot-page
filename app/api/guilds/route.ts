@@ -34,8 +34,14 @@ export async function GET(request: NextRequest) {
     }
 
     if (!userGuildsRes.ok) {
+      let retryAfter: number | undefined;
+      try {
+        retryAfter = (JSON.parse(userGuildsRes.body) as { retry_after?: number }).retry_after;
+      } catch {
+        retryAfter = undefined;
+      }
       return NextResponse.json(
-        { error: "Error al consultar servidores de Discord", details: userGuildsRes.body },
+        { error: "Error al consultar servidores de Discord", details: userGuildsRes.body, retryAfter },
         { status: userGuildsRes.status }
       );
     }
