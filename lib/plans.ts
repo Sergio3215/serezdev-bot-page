@@ -19,6 +19,7 @@ export const PLANS: Record<PlanId, Plan> = {
         features: [
             "Interacciones con GIFs (hasta 5 personalizados)",
             "Hasta 4 comandos personalizados",
+            "Hasta 2 reglas de canal",
             "Recordatorio de cumpleaños",
             "Bienvenida con rol automático",
         ],
@@ -37,6 +38,7 @@ export const PLANS: Record<PlanId, Plan> = {
             "Tarjetas con fondo degradado",
             "Hasta 10 GIFs personalizados",
             "Hasta 15 comandos personalizados",
+            "Hasta 15 reglas de canal",
             "Reinicio del bot bajo demanda",
         ],
     },
@@ -55,6 +57,7 @@ export const PLANS: Record<PlanId, Plan> = {
             "GIFs personalizados ilimitados",
             "Editar los GIFs por defecto",
             "Comandos personalizados ilimitados",
+            "Reglas de canal ilimitadas",
             "Plantillas exclusivas de tarjetas",
             "Prioridad de soporte",
         ],
@@ -70,18 +73,19 @@ export const CARD_BACKGROUND_UNLOCKED_SERVER_IDS = ["748652112485023854"];
 /**
  * Límites por plan. `customGifs` es el total de GIFs personalizados del servidor,
  * sumando todas las interacciones; `customCommands`, el total de comandos personalizados
- * creados, activos o no (null = sin límite).
+ * creados, activos o no; `channelRules`, lo mismo para las reglas de canal (null = sin límite).
  */
 export const PLAN_LIMITS: Record<PlanId, {
     customGifs: number | null;
     customCommands: number | null;
+    channelRules: number | null;
     cardBackgrounds: BackgroundType[];
     botRestart: boolean;
     editDefaultGifs: boolean;
 }> = {
-    free: { customGifs: 5, customCommands: 4, cardBackgrounds: ["color"], botRestart: false, editDefaultGifs: false },
-    pro: { customGifs: 10, customCommands: 15, cardBackgrounds: ["color", "gradient"], botRestart: true, editDefaultGifs: false },
-    premium: { customGifs: null, customCommands: null, cardBackgrounds: ["color", "gradient", "image"], botRestart: true, editDefaultGifs: true },
+    free: { customGifs: 5, customCommands: 4, channelRules: 2, cardBackgrounds: ["color"], botRestart: false, editDefaultGifs: false },
+    pro: { customGifs: 10, customCommands: 15, channelRules: 15, cardBackgrounds: ["color", "gradient"], botRestart: true, editDefaultGifs: false },
+    premium: { customGifs: null, customCommands: null, channelRules: null, cardBackgrounds: ["color", "gradient", "image"], botRestart: true, editDefaultGifs: true },
 };
 
 /** Servidores que pueden reiniciar el bot aunque sean Free. */

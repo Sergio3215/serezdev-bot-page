@@ -16,5 +16,4 @@ export interface ChannelRuleInput {
     type: "linkRestriction";
     allowedTypes: LinkType[];
     mode: LinkRuleMode;
-    enabled?: boolean;
 }

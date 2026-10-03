@@ -4,6 +4,8 @@ import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import ChannelDropdown from "@/Components/ui/ChannelDropdown";
 import { botApiUrl } from "@/lib/botApi";
+import { PLAN_LIMITS, PLANS } from "@/lib/plans";
+import { useServerPlan } from "@/lib/useServerPlan";
 import type { ChannelRule, ChannelRuleInput, LinkRuleMode, LinkType } from "@/types/ChannelRule";
 import type { DiscordChannel } from "@/types/DiscordTypes";
 
@@ -26,7 +28,6 @@ const MODE_LABEL = new Map(MODES.map((mode) => [mode.id, mode.label]));
 
 interface Draft extends ChannelRuleInput {
     id: string | null;
-    enabled: boolean;
 }
 
 type Feedback = { type: "success" | "error"; text: string } | null;
@@ -35,7 +36,7 @@ async function readJson(res: Response): Promise<{ message?: string; error?: stri
     return res.json().catch(() => ({}));
 }
 
-const emptyDraft = (): Draft => ({ id: null, channelId: "", type: "linkRestriction", allowedTypes: [], mode: "contains", enabled: true });
+const emptyDraft = (): Draft => ({ id: null, channelId: "", type: "linkRestriction", allowedTypes: [], mode: "contains" });
 
 interface ChannelRuleManagerProps {
     /** Lo controla el "Atrás" del encabezado: al pasar a false se vuelve al listado. */
@@ -56,6 +57,11 @@ export default function ChannelRuleManager({ editing, setEditing }: ChannelRuleM
     const [feedback, setFeedback] = useState<Feedback>(null);
     const [saving, setSaving] = useState(false);
     const [pendingDelete, setPendingDelete] = useState<ChannelRule | null>(null);
+    const plan = useServerPlan();
+    const ruleLimit = plan ? PLAN_LIMITS[plan].channelRules : null;
+    const atLimit = ruleLimit !== null && rules.length >= ruleLimit;
+    const activeCount = rules.filter((rule) => rule.enabled).length;
+    const activeAtLimit = ruleLimit !== null && activeCount >= ruleLimit;
 
     const loadRules = useCallback(async (signal?: AbortSignal) => {
         try {
@@ -102,7 +108,7 @@ export default function ChannelRuleManager({ editing, setEditing }: ChannelRuleM
 
     const openForm = (rule: ChannelRule | null) => {
         setDraft(rule
-            ? { id: rule.id, channelId: rule.channelId, type: rule.type, allowedTypes: [...rule.allowedTypes], mode: rule.mode, enabled: rule.enabled }
+            ? { id: rule.id, channelId: rule.channelId, type: rule.type, allowedTypes: [...rule.allowedTypes], mode: rule.mode }
             : emptyDraft());
         setFormError(null);
         setFeedback(null);
@@ -135,7 +141,6 @@ export default function ChannelRuleManager({ editing, setEditing }: ChannelRuleM
                 type: draft.type,
                 allowedTypes: draft.allowedTypes,
                 mode: draft.mode,
-                enabled: draft.enabled,
             };
             const res = await fetch(botApiUrl(idServer, draft.id ? `channelRule/${draft.id}` : "channelRule"), {
                 method: draft.id ? "PUT" : "POST",
@@ -247,15 +252,6 @@ export default function ChannelRuleManager({ editing, setEditing }: ChannelRuleM
                     ))}
                 </fieldset>
 
-                <label className="flex cursor-pointer items-center gap-3 text-xs text-zinc-300">
-                    <input
-                        type="checkbox"
-                        checked={draft.enabled}
-                        onChange={(event) => setDraft((current) => ({ ...current, enabled: event.target.checked }))}
-                        className="accent-[#5865F2]"
-                    />
-                    Regla activa
-                </label>
 
                 {formError && (
                     <div role="alert" className="rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-xs text-red-300">{formError}</div>
@@ -278,15 +274,31 @@ export default function ChannelRuleManager({ editing, setEditing }: ChannelRuleM
     return (
         <div className="mx-auto mt-6 max-w-4xl space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
-                <p className="text-xs text-zinc-400">Reglas que el bot aplica a los mensajes de un canal.</p>
+                <div className="space-y-0.5">
+                    <p className="text-xs text-zinc-400">Reglas que el bot aplica a los mensajes de un canal.</p>
+                    {plan && (
+                        <p className={`text-[11px] ${atLimit ? "text-amber-300" : "text-zinc-500"}`}>
+                            {ruleLimit === null
+                                ? `${rules.length} reglas · Plan ${PLANS[plan].name}: sin límite`
+                                : `${rules.length} de ${ruleLimit} reglas · ${activeCount} activas · Plan ${PLANS[plan].name}`}
+                        </p>
+                    )}
+                </div>
                 <button
                     type="button"
                     onClick={() => openForm(null)}
-                    className="rounded-xl bg-[#5865F2] px-5 py-2.5 text-xs font-semibold text-white shadow-lg shadow-[#5865F2]/20 hover:bg-[#4752c4] cursor-pointer"
+                    disabled={atLimit}
+                    title={atLimit ? `Tu plan permite hasta ${ruleLimit} reglas de canal.` : undefined}
+                    className="rounded-xl bg-[#5865F2] px-5 py-2.5 text-xs font-semibold text-white shadow-lg shadow-[#5865F2]/20 hover:bg-[#4752c4] disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
                 >
                     + Nueva regla
                 </button>
             </div>
+            {atLimit && (
+                <p className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-200">
+                    Llegaste al máximo de reglas de tu plan. Podés editar, activar o eliminar las que ya tenés; para crear otra, eliminá una o mejorá el plan.
+                </p>
+            )}
 
             {listError && <div role="alert" className="rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-xs text-red-300">{listError}</div>}
             {feedback && (
@@ -313,9 +325,12 @@ export default function ChannelRuleManager({ editing, setEditing }: ChannelRuleM
                                     role="switch"
                                     aria-checked={rule.enabled}
                                     aria-label={`Activar la regla de ${channelName(rule.channelId)}`}
-                                    title={rule.enabled ? "Activa" : "Inactiva"}
+                                    title={!rule.enabled && activeAtLimit
+                                        ? `Tu plan permite hasta ${ruleLimit} reglas activas. Desactivá otra para activar esta.`
+                                        : rule.enabled ? "Activa" : "Inactiva"}
+                                    disabled={!rule.enabled && activeAtLimit}
                                     onClick={() => toggleEnabled(rule)}
-                                    className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors cursor-pointer ${rule.enabled ? "bg-[#23a55a]" : "bg-[#4e5058]"}`}
+                                    className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-40 ${rule.enabled ? "bg-[#23a55a]" : "bg-[#4e5058]"}`}
                                 >
                                     <span
                                         aria-hidden="true"

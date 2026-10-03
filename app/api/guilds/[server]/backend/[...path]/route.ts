@@ -47,33 +47,59 @@ function endpointKey(path: string[]): string {
 
 const SNOWFLAKE_PATTERN = /^\d{17,20}$/;
 
+/** Recursos con límite por plan: endpoint del backend, límite en PLAN_LIMITS y textos. */
+const LIMITED_RESOURCES = {
+    customCommand: { limit: "customCommands", total: "comandos personalizados", active: "comandos activos", toggle: "status" },
+    channelRule: { limit: "channelRules", total: "reglas de canal", active: "reglas activas", toggle: "enabled" },
+} as const;
+
+type LimitedResource = keyof typeof LIMITED_RESOURCES;
+
 /**
- * Límite de comandos personalizados del plan. Crear cuenta el total de comandos; activar cuenta
- * solo los activos, así un servidor que bajó de plan conserva los que ya tenía activos pero no
- * puede reactivar hasta quedar por debajo del límite. Si no se puede leer el plan o la cantidad,
- * no deja continuar.
+ * Límite del plan. Crear cuenta el total; activar cuenta solo los activos, así un servidor que
+ * bajó de plan conserva los que ya tenía activos pero no puede reactivar hasta quedar por debajo
+ * del límite. Si no se puede leer el plan o la cantidad, no deja continuar.
  */
-async function customCommandLimitError(serverId: string, action: "create" | "activate"): Promise<{ error: string; status: number } | null> {
+async function planLimitError(
+    serverId: string,
+    resource: LimitedResource,
+    action: "create" | "activate",
+    itemId?: string
+): Promise<{ error: string; status: number } | null> {
+    const config = LIMITED_RESOURCES[resource];
     try {
         const plan = (await getServerPlanView(serverId)).plan;
-        const limit = PLAN_LIMITS[plan].customCommands;
+        const limit = PLAN_LIMITS[plan][config.limit];
         if (limit === null) return null;
-        const url = new URL(`${BOT_API_BASE}/customCommand`);
+        const url = new URL(`${BOT_API_BASE}/${resource}`);
         url.searchParams.set("serverId", serverId);
         const res = await fetch(url, { headers: internalApiHeaders(), cache: "no-store" });
         if (!res.ok) throw new Error(`El backend respondió ${res.status}`);
-        const data: { data?: { enabled?: boolean }[] } = await res.json();
-        const commands = Array.isArray(data.data) ? data.data : [];
-        const count = action === "create" ? commands.length : commands.filter((command) => command.enabled).length;
+        const data: { data?: { id?: string; enabled?: boolean }[] } = await res.json();
+        const items = Array.isArray(data.data) ? data.data : [];
+        if (action === "activate" && items.some((item) => item.id === itemId && item.enabled)) return null;
+        const count = action === "create" ? items.length : items.filter((item) => item.enabled).length;
         if (count < limit) return null;
         const error = action === "create"
-            ? `El plan ${PLANS[plan].name} permite hasta ${limit} comandos personalizados.`
-            : `El plan ${PLANS[plan].name} permite hasta ${limit} comandos activos. Desactivá otro para activar este.`;
+            ? `El plan ${PLANS[plan].name} permite hasta ${limit} ${config.total}.`
+            : `El plan ${PLANS[plan].name} permite hasta ${limit} ${config.active}. Desactivá otro para activar este.`;
         return { error, status: 403 };
     } catch (err) {
-        console.error("[backend proxy] no se pudo verificar el límite de comandos:", err);
-        return { error: "No se pudo verificar el límite de comandos de tu plan.", status: 502 };
+        console.error(`[backend proxy] no se pudo verificar el límite de ${config.total}:`, err);
+        return { error: `No se pudo verificar el límite de ${config.total} de tu plan.`, status: 502 };
     }
+}
+
+/** Qué controla el límite del plan para este pedido: crear o activar un recurso limitado. */
+function limitCheckFor(method: Method, path: string[], body: string | undefined) {
+    const [resource, id, toggle] = path;
+    if (!(resource in LIMITED_RESOURCES)) return null;
+    const config = LIMITED_RESOURCES[resource as LimitedResource];
+    const enabling = JSON.parse(body ?? "{}").enabled === true;
+    if (method === "POST" && path.length === 1) return { resource: resource as LimitedResource, action: "create" as const };
+    if (method === "PATCH" && toggle === config.toggle && enabling) return { resource: resource as LimitedResource, action: "activate" as const, id };
+    if (method === "PUT" && path.length === 2 && enabling) return { resource: resource as LimitedResource, action: "activate" as const, id };
+    return null;
 }
 
 /**
@@ -157,15 +183,13 @@ async function proxy(request: NextRequest, { params }: Context, method: Method) 
         headers["Content-Type"] = "application/json";
     }
 
-    const limitAction = method === "POST" && endpointKey(path) === "customCommand" ? "create"
-        : method === "PATCH" && endpointKey(path) === "customCommand/:id/status" && JSON.parse(body ?? "{}").enabled === true ? "activate"
-        : null;
+    const limitCheck = limitCheckFor(method, path, body);
     if (method === "PUT" && endpointKey(path) === "gif/editGif") {
         const gifError = await gifEditError(serverId, JSON.parse(body ?? "{}"));
         if (gifError) return NextResponse.json({ error: gifError.error, message: gifError.error }, { status: gifError.status });
     }
-    if (limitAction) {
-        const limit = await customCommandLimitError(serverId, limitAction);
+    if (limitCheck) {
+        const limit = await planLimitError(serverId, limitCheck.resource, limitCheck.action, limitCheck.id);
         if (limit) return NextResponse.json({ error: limit.error, message: limit.error }, { status: limit.status });
     }
 
