@@ -166,6 +166,12 @@ export default function ServerDashboard({ filteredGuilds, loadingGuilds }: serve
                                                                 setTitle("Administrador de Interacciones")
                                                             }} title={`Administrar &rarr;`} />
                                                         </Section>
+                                                        <Section title="Reglas de canal">
+                                                            <ButtonDiscord onClick={() => {
+                                                                setState("channelRule");
+                                                                setTitle("Reglas de canal")
+                                                            }} title={`Administrar &rarr;`} />
+                                                        </Section>
                                                         <Section title="Comandos Personalizados">
                                                             <ButtonDiscord onClick={() => {
                                                                 setState("customCommand");

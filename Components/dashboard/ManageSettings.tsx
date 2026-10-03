@@ -7,6 +7,7 @@ import BirthdaySetup from "@/Components/birthday/BirthdaySetup";
 import JoinServerSetup from "@/Components/welcome/JoinServerSetup";
 import PricingPlans from "@/Components/billing/PricingPlans";
 import CustomCommandManager from "@/Components/customCommands/CustomCommandManager";
+import ChannelRuleManager from "@/Components/channelRules/ChannelRuleManager";
 
 export default function ManageSetting({ title, state, setState }: ManageSettingType) {
     const [newFlag, setNewFlag] = useState<boolean>(false);
@@ -53,6 +54,11 @@ export default function ManageSetting({ title, state, setState }: ManageSettingT
                         <>
                             <CustomCommandManager editing={newFlag} setEditing={setNewFlag} />
                         </>
+                    )
+                }
+                {
+                    state === "channelRule" && (
+                        <ChannelRuleManager editing={newFlag} setEditing={setNewFlag} />
                     )
                 }
                 {

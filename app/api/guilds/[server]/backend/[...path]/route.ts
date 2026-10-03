@@ -24,6 +24,9 @@ const ALLOWED_ENDPOINTS: Record<string, readonly Method[]> = {
     "customCommand": ["GET", "POST"],
     "customCommand/:id": ["PUT", "DELETE"],
     "customCommand/:id/status": ["PATCH"],
+    "channelRule": ["GET", "POST"],
+    "channelRule/:id": ["PUT", "DELETE"],
+    "channelRule/:id/enabled": ["PATCH"],
 };
 
 // Desactivado: el bot recarga los comandos personalizados con un cron cada 10 segundos.
