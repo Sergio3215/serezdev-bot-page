@@ -19,7 +19,7 @@ export const PLANS: Record<PlanId, Plan> = {
         features: [
             "Interacciones con GIFs (hasta 5 personalizados)",
             "Hasta 4 comandos personalizados",
-            "Hasta 2 reglas de canal",
+            "Hasta 3 reglas de canal",
             "Recordatorio de cumpleaños",
             "Bienvenida con rol automático",
         ],
@@ -83,7 +83,7 @@ export const PLAN_LIMITS: Record<PlanId, {
     botRestart: boolean;
     editDefaultGifs: boolean;
 }> = {
-    free: { customGifs: 5, customCommands: 4, channelRules: 2, cardBackgrounds: ["color"], botRestart: false, editDefaultGifs: false },
+    free: { customGifs: 5, customCommands: 4, channelRules: 3, cardBackgrounds: ["color"], botRestart: false, editDefaultGifs: false },
     pro: { customGifs: 10, customCommands: 15, channelRules: 15, cardBackgrounds: ["color", "gradient"], botRestart: true, editDefaultGifs: false },
     premium: { customGifs: null, customCommands: null, channelRules: null, cardBackgrounds: ["color", "gradient", "image"], botRestart: true, editDefaultGifs: true },
 };

@@ -14,6 +14,7 @@ interface CustomCommand {
     id: string;
     command: string;
     code: string;
+    description: string | null;
     enabled: boolean;
 }
 
@@ -21,11 +22,14 @@ interface Draft {
     id: string | null;
     command: string;
     code: string;
+    description: string;
     mode: "simple" | "advanced";
     actions: SimpleAction[];
     /** Último código generado por el modo simple; si el texto cambió, volver al modo simple lo reemplaza. */
     generated: string;
 }
+
+const DESCRIPTION_MAX_LENGTH = 100;
 
 type Feedback = { type: "success" | "error"; text: string } | null;
 
@@ -125,7 +129,7 @@ export default function CustomCommandManager({ editing, setEditing }: CustomComm
 
     const openNew = () => {
         const code = generate(INITIAL_ACTIONS);
-        setDraft({ id: null, command: "", code, mode: "simple", actions: INITIAL_ACTIONS, generated: code });
+        setDraft({ id: null, command: "", code, description: "", mode: "simple", actions: INITIAL_ACTIONS, generated: code });
         setFeedback(null);
         setEditing(true);
     };
@@ -133,9 +137,10 @@ export default function CustomCommandManager({ editing, setEditing }: CustomComm
     const openExisting = (command: CustomCommand) => {
         const read = readSimpleSource(command.code);
         const actions = read && canShowInSimpleMode(read) ? read : null;
+        const base = { id: command.id, command: command.command, code: command.code, description: command.description ?? "" };
         setDraft(actions
-            ? { id: command.id, command: command.command, code: command.code, mode: "simple", actions, generated: command.code }
-            : { id: command.id, command: command.command, code: command.code, mode: "advanced", actions: INITIAL_ACTIONS, generated: "" });
+            ? { ...base, mode: "simple", actions, generated: command.code }
+            : { ...base, mode: "advanced", actions: INITIAL_ACTIONS, generated: "" });
         setFeedback(null);
         setConfirmSimple(false);
         setEditing(true);
@@ -172,6 +177,7 @@ export default function CustomCommandManager({ editing, setEditing }: CustomComm
     const save = async () => {
         if (!draft) return;
         const command = draft.command.trim();
+        const description = draft.description.trim() === "" ? null : draft.description.trim();
         if (!command) return;
         const result = languageService.analyze(draft.code);
         if (!result.valid) {
@@ -186,7 +192,7 @@ export default function CustomCommandManager({ editing, setEditing }: CustomComm
             const res = await fetch(botApiUrl(idServer, draft.id ? `customCommand/${draft.id}` : "customCommand"), {
                 method: draft.id ? "PUT" : "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(draft.id ? { command, code: draft.code } : { command, code: draft.code, enabled: true }),
+                body: JSON.stringify(draft.id ? { command, code: draft.code, description } : { command, code: draft.code, description, enabled: true }),
             });
             const data = await readJson(res);
             if (!res.ok) {
@@ -315,6 +321,20 @@ export default function CustomCommandManager({ editing, setEditing }: CustomComm
                     </div>
                 </div>
 
+                <label className="block space-y-1.5">
+                    <span className="flex items-baseline justify-between">
+                        <span className="text-xs font-semibold text-zinc-300">Descripción</span>
+                        <span className="text-[10px] text-zinc-500">{draft.description.length}/{DESCRIPTION_MAX_LENGTH}</span>
+                    </span>
+                    <input
+                        value={draft.description}
+                        maxLength={DESCRIPTION_MAX_LENGTH}
+                        onChange={(event) => updateDraft({ description: event.target.value })}
+                        placeholder="Describe brevemente qué hace este comando"
+                        className="w-full rounded-lg border border-white/10 bg-[#111214] px-3 py-2 text-sm text-white placeholder:text-zinc-500 focus:border-[#5865F2] focus:outline-none"
+                    />
+                </label>
+
                 {confirmSimple && (
                     <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-200" role="alertdialog">
                         <span>El código fue editado a mano. El modo simple lo va a reemplazar por lo que tengas en sus controles.</span>
@@ -402,7 +422,10 @@ export default function CustomCommandManager({ editing, setEditing }: CustomComm
                 <ul className="divide-y divide-white/5 rounded-xl border border-white/10 bg-[#12141e]">
                     {commands.map((command) => (
                         <li key={command.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
-                            <span className="font-mono text-sm text-white">{command.command}</span>
+                            <div className="min-w-0">
+                                <span className="font-mono text-sm text-white">{command.command}</span>
+                                {command.description && <p className="truncate text-[11px] text-zinc-400">{command.description}</p>}
+                            </div>
                             <div className="flex items-center gap-2">
                                 <button
                                     type="button"
