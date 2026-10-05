@@ -22,6 +22,7 @@ const ALLOWED_ENDPOINTS: Record<string, readonly Method[]> = {
     "joinServer/setup": ["GET", "POST", "PUT"],
     "joinServer/setup-card": ["GET", "POST", "PUT"],
     "customCommand": ["GET", "POST"],
+    "customCommand/preview": ["POST"],
     "customCommand/:id": ["PUT", "DELETE"],
     "customCommand/:id/status": ["PATCH"],
     "channelRule": ["GET", "POST"],

@@ -11,6 +11,7 @@ import type { CustomCommand, TriggerType } from "@/types/CustomCommand";
 import type { DiscordChannel, DiscordRole } from "@/types/DiscordTypes";
 import MultiSelectChips from "@/Components/shared/MultiSelectChips";
 import CodeEditor, { type CodeEditorHandle } from "./editor/CodeEditor";
+import CommandPreview from "./CommandPreview";
 import SimpleCommandForm, { canShowInSimpleMode, SIMPLE_FUNCTIONS, simpleDiagnosticMessage } from "./SimpleCommandForm";
 
 interface Draft {
@@ -420,6 +421,8 @@ export default function CustomCommandManager({ editing, setEditing }: CustomComm
                         .
                     </p>
                 )}
+
+                <CommandPreview serverId={idServer} code={draft.code} command={draft.command} channels={channels} roles={serverRoles ?? []} />
             </div>
         );
     }

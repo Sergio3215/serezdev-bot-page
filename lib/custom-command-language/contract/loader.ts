@@ -785,6 +785,21 @@ function loadFunctions(
             }
         }
 
+        const parameterNames = new Set(parameters.map((parameter) => parameter.name));
+        if (parameterNames.size !== parameters.length) fail(`${path}.parameters`, "hay parámetros con el mismo nombre");
+
+        const declared = {
+            parameters: (definition.parameters as JsonObject[]).map((parameter) => ({
+                name: parameter.name as string,
+                required: parameter.required as boolean,
+                type: parameter.type as string,
+            })),
+            returns: `${returnsJson.type as string}${nullable ? " | Null" : ""}`,
+        };
+        const signatures = strArray(definition, "signatures", path);
+        if (signatures.length === 0) fail(`${path}.signatures`, "se esperaba al menos una firma");
+        signatures.forEach((signature, index) => checkSignature(signature, name, declared, `${path}.signatures[${index}]`));
+
         functionByName.set(name, {
             name,
             kind,
@@ -796,11 +811,65 @@ function loadFunctions(
             requires: definition.requires === undefined
                 ? []
                 : strArray(definition, "requires", path).map((requirement) => oneOf(requirement, FUNCTION_REQUIREMENTS, `${path}.requires`)),
-            signatures: strArray(definition, "signatures", path),
+            signatures,
             examples: strArray(definition, "examples", path),
         });
     }
     return { functionByName, categories };
+}
+
+const SIGNATURE_PATTERN = /^([A-Za-z_$][\w$]*)\((.*)\): (.+)$/;
+const SIGNATURE_PARAMETER_PATTERN = /^([A-Za-z_$][\w$]*)(\?)?: (.+)$/;
+
+/** Separa los parámetros de una firma por comas fuera de `<...>`. */
+function splitSignatureParameters(list: string): string[] {
+    if (list.trim() === "") return [];
+    const parts: string[] = [];
+    let depth = 0;
+    let start = 0;
+    for (let index = 0; index < list.length; index++) {
+        if (list[index] === "<") depth++;
+        else if (list[index] === ">") depth--;
+        else if (list[index] === "," && depth === 0) {
+            parts.push(list.slice(start, index).trim());
+            start = index + 1;
+        }
+    }
+    parts.push(list.slice(start).trim());
+    return parts;
+}
+
+/**
+ * La firma documentada tiene que coincidir con la declaración: nombre, parámetros en orden,
+ * obligatoriedad y tipos. Un tipo declarado con `Any` es genérico y la firma puede nombrarlo distinto.
+ */
+function checkSignature(
+    signature: string,
+    name: string,
+    declared: { parameters: { name: string; required: boolean; type: string }[]; returns: string },
+    path: string
+) {
+    const match = SIGNATURE_PATTERN.exec(signature);
+    if (!match) fail(path, "la firma no tiene la forma nombre(parámetros): Tipo");
+    const [, signatureName, list, returns] = match;
+    if (signatureName !== name) fail(path, `la firma nombra ${signatureName} en lugar de ${name}`);
+    const parameters = splitSignatureParameters(list);
+    if (parameters.length !== declared.parameters.length) {
+        fail(path, `la firma tiene ${parameters.length} parámetros y la función declara ${declared.parameters.length}`);
+    }
+    parameters.forEach((raw, index) => {
+        const parameter = SIGNATURE_PARAMETER_PATTERN.exec(raw);
+        const expected = declared.parameters[index];
+        if (!parameter) fail(path, `parámetro inválido en la firma: ${raw}`);
+        if (parameter[1] !== expected.name) fail(path, `el parámetro ${index + 1} se llama ${expected.name}, no ${parameter[1]}`);
+        if ((parameter[2] === undefined) !== expected.required) fail(path, `el parámetro ${expected.name} no coincide en obligatoriedad`);
+        if (!/\bAny\b/.test(expected.type) && parameter[3] !== expected.type) {
+            fail(path, `el parámetro ${expected.name} es ${expected.type}, no ${parameter[3]}`);
+        }
+    });
+    if (!/\bAny\b/.test(declared.returns) && returns !== declared.returns) {
+        fail(path, `el retorno es ${declared.returns}, no ${returns}`);
+    }
 }
 
 function loadFormatter(formatter: JsonObject): FormatterModel {
