@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "languageVersion": "1.1.0",
+  "languageVersion": "1.2.0",
   "caseSensitive": true,
   "lexical": {
     "identifier": {

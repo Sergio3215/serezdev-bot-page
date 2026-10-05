@@ -14,6 +14,8 @@ export async function GET(
   { params }: { params: Promise<{ server: string }> }
 ) {
   const { server: guildId } = await params;
+  /** Con `?includeManaged=1` también devuelve los roles de bots, integraciones y boosters (sirven para permisos, no para asignar). */
+  const includeManaged = request.nextUrl.searchParams.get("includeManaged") === "1";
 
   const tokenCookie = request.cookies.get("discord_token");
   if (!tokenCookie || !tokenCookie.value) {
@@ -103,14 +105,15 @@ export async function GET(
 
     const roles = allRoles
       .filter((r) => r.id !== guildId) // @everyone
-      .filter((r) => !r.managed) // roles de bots, integraciones y booster
+      .filter((r) => includeManaged || !r.managed) // roles de bots, integraciones y booster
       .sort((a, b) => b.position - a.position)
       .map((r) => ({
         id: r.id,
         name: r.name,
         color: r.color ? `#${r.color.toString(16).padStart(6, "0")}` : "#99AAB5",
         position: r.position,
-        assignable: r.position < botHighestPosition,
+        assignable: !r.managed && r.position < botHighestPosition,
+        managed: r.managed,
       }));
 
     return NextResponse.json({ roles });

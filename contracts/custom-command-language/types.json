@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "languageVersion": "1.1.0",
+  "languageVersion": "1.2.0",
   "typeKinds": ["scalar", "object", "array", "union", "void"],
   "types": {
     "String": { "kind": "scalar" },
@@ -8,6 +8,7 @@
     "Boolean": { "kind": "scalar" },
     "Null": { "kind": "scalar", "literal": null },
     "Void": { "kind": "void" },
+    "Any": { "kind": "scalar" },
     "ChannelReference": {
       "kind": "object",
       "readOnly": true,

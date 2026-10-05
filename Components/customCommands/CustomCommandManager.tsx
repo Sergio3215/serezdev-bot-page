@@ -6,23 +6,20 @@ import { botApiUrl } from "@/lib/botApi";
 import { PLAN_LIMITS, PLANS } from "@/lib/plans";
 import { useServerPlan } from "@/lib/useServerPlan";
 import { generateSimpleSource, languageService, readSimpleSource, SimpleModelError, type SimpleAction } from "@/lib/custom-command-language";
+import { buildCustomCommandPayload, effectiveRoleIds, normalizeCustomCommand, TRIGGER_TYPES } from "@/lib/customCommands";
+import type { CustomCommand, TriggerType } from "@/types/CustomCommand";
 import type { DiscordChannel, DiscordRole } from "@/types/DiscordTypes";
+import MultiSelectChips from "@/Components/shared/MultiSelectChips";
 import CodeEditor, { type CodeEditorHandle } from "./editor/CodeEditor";
 import SimpleCommandForm, { canShowInSimpleMode, SIMPLE_FUNCTIONS, simpleDiagnosticMessage } from "./SimpleCommandForm";
-
-interface CustomCommand {
-    id: string;
-    command: string;
-    code: string;
-    description: string | null;
-    enabled: boolean;
-}
 
 interface Draft {
     id: string | null;
     command: string;
+    triggerType: TriggerType;
     code: string;
     description: string;
+    allowedRoleIds: string[];
     mode: "simple" | "advanced";
     actions: SimpleAction[];
     /** Último código generado por el modo simple; si el texto cambió, volver al modo simple lo reemplaza. */
@@ -76,6 +73,9 @@ export default function CustomCommandManager({ editing, setEditing }: CustomComm
     const [pendingDelete, setPendingDelete] = useState<CustomCommand | null>(null);
     const [channels, setChannels] = useState<DiscordChannel[]>([]);
     const [roles, setRoles] = useState<DiscordRole[]>([]);
+    const [serverRoles, setServerRoles] = useState<DiscordRole[] | null>(null);
+    const [rolesError, setRolesError] = useState(false);
+    const serverRoleIds = useMemo(() => serverRoles?.map((role) => role.id) ?? null, [serverRoles]);
     const editorRef = useRef<CodeEditorHandle>(null);
     const plan = useServerPlan();
     const commandLimit = plan ? PLAN_LIMITS[plan].customCommands : null;
@@ -88,7 +88,7 @@ export default function CustomCommandManager({ editing, setEditing }: CustomComm
             const res = await fetch(botApiUrl(idServer, "customCommand"), { signal, cache: "no-store" });
             const data = await readJson(res);
             if (!res.ok) throw new Error(data.message || data.error || `Error ${res.status}`);
-            setCommands(Array.isArray(data.data) ? (data.data as CustomCommand[]) : []);
+            setCommands(Array.isArray(data.data) ? (data.data as Record<string, unknown>[]).map(normalizeCustomCommand) : []);
             setListError(null);
         } catch (error) {
             if (signal?.aborted) return;
@@ -111,7 +111,17 @@ export default function CustomCommandManager({ editing, setEditing }: CustomComm
                 })
                 .catch(() => undefined);
         fetchList<DiscordChannel>("channels", setChannels);
-        fetchList<DiscordRole>("roles", setRoles);
+        fetch(`/api/guilds/${idServer}/roles?includeManaged=1`, { signal: controller.signal })
+            .then((res) => (res.ok ? res.json() : Promise.reject(new Error(`Error ${res.status}`))))
+            .then((data: { roles?: DiscordRole[] }) => {
+                if (controller.signal.aborted) return;
+                const all = data.roles ?? [];
+                setServerRoles(all);
+                setRoles(all.filter((role) => !role.managed));
+            })
+            .catch(() => {
+                if (!controller.signal.aborted) setRolesError(true);
+            });
         return () => controller.abort();
     }, [idServer, loadCommands]);
 
@@ -129,7 +139,7 @@ export default function CustomCommandManager({ editing, setEditing }: CustomComm
 
     const openNew = () => {
         const code = generate(INITIAL_ACTIONS);
-        setDraft({ id: null, command: "", code, description: "", mode: "simple", actions: INITIAL_ACTIONS, generated: code });
+        setDraft({ id: null, command: "", triggerType: "include", code, description: "", allowedRoleIds: [], mode: "simple", actions: INITIAL_ACTIONS, generated: code });
         setFeedback(null);
         setEditing(true);
     };
@@ -137,7 +147,14 @@ export default function CustomCommandManager({ editing, setEditing }: CustomComm
     const openExisting = (command: CustomCommand) => {
         const read = readSimpleSource(command.code);
         const actions = read && canShowInSimpleMode(read) ? read : null;
-        const base = { id: command.id, command: command.command, code: command.code, description: command.description ?? "" };
+        const base = {
+            id: command.id,
+            command: command.command,
+            triggerType: command.triggerType,
+            code: command.code,
+            description: command.description ?? "",
+            allowedRoleIds: command.allowedRoleIds,
+        };
         setDraft(actions
             ? { ...base, mode: "simple", actions, generated: command.code }
             : { ...base, mode: "advanced", actions: INITIAL_ACTIONS, generated: "" });
@@ -176,8 +193,8 @@ export default function CustomCommandManager({ editing, setEditing }: CustomComm
 
     const save = async () => {
         if (!draft) return;
-        const command = draft.command.trim();
-        const description = draft.description.trim() === "" ? null : draft.description.trim();
+        const payload = buildCustomCommandPayload(draft, serverRoleIds, !draft.id);
+        const command = payload.command;
         if (!command) return;
         const result = languageService.analyze(draft.code);
         if (!result.valid) {
@@ -192,7 +209,7 @@ export default function CustomCommandManager({ editing, setEditing }: CustomComm
             const res = await fetch(botApiUrl(idServer, draft.id ? `customCommand/${draft.id}` : "customCommand"), {
                 method: draft.id ? "PUT" : "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(draft.id ? { command, code: draft.code, description } : { command, code: draft.code, description, enabled: true }),
+                body: JSON.stringify(payload),
             });
             const data = await readJson(res);
             if (!res.ok) {
@@ -200,7 +217,7 @@ export default function CustomCommandManager({ editing, setEditing }: CustomComm
                 return;
             }
             const saved = data.data as CustomCommand | undefined;
-            updateDraft({ id: saved?.id ?? draft.id, command });
+            updateDraft({ id: saved?.id ?? draft.id, command, allowedRoleIds: payload.allowedRoleIds });
             const notice = restartNotice(res);
             const base = data.message || "Comando guardado.";
             setFeedback(draft.id
@@ -295,8 +312,8 @@ export default function CustomCommandManager({ editing, setEditing }: CustomComm
                     </div>
                 )}
 
-                <div className="flex flex-wrap items-end gap-4">
-                    <label className="flex-1 space-y-1.5">
+                <div className="grid gap-4 sm:grid-cols-2">
+                    <label className="block space-y-1.5">
                         <span className="text-xs font-semibold text-zinc-300">Mensaje que activa el comando *</span>
                         <input
                             value={draft.command}
@@ -305,6 +322,57 @@ export default function CustomCommandManager({ editing, setEditing }: CustomComm
                             className="w-full rounded-lg border border-white/10 bg-[#111214] px-3 py-2 text-sm text-white placeholder:text-zinc-500 focus:border-[#5865F2] focus:outline-none"
                         />
                     </label>
+                    <label className="block space-y-1.5">
+                        <span className="text-xs font-semibold text-zinc-300">Tipo de trigger</span>
+                        <select
+                            value={draft.triggerType}
+                            onChange={(event) => updateDraft({ triggerType: event.target.value as TriggerType })}
+                            className="w-full rounded-lg border border-white/10 bg-[#111214] px-3 py-2 text-sm text-white focus:border-[#5865F2] focus:outline-none"
+                        >
+                            {TRIGGER_TYPES.map((trigger) => (
+                                <option key={trigger.id} value={trigger.id}>{trigger.label}</option>
+                            ))}
+                        </select>
+                        <span className="block text-[11px] text-zinc-500">
+                            {TRIGGER_TYPES.find((trigger) => trigger.id === draft.triggerType)?.description}
+                        </span>
+                    </label>
+                </div>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                    <label className="block space-y-1.5">
+                        <span className="flex items-baseline justify-between">
+                            <span className="text-xs font-semibold text-zinc-300">Descripción</span>
+                            <span className="text-[10px] text-zinc-500">{draft.description.length}/{DESCRIPTION_MAX_LENGTH}</span>
+                        </span>
+                        <input
+                            value={draft.description}
+                            maxLength={DESCRIPTION_MAX_LENGTH}
+                            onChange={(event) => updateDraft({ description: event.target.value })}
+                            placeholder="Describe brevemente qué hace este comando"
+                            className="w-full rounded-lg border border-white/10 bg-[#111214] px-3 py-2 text-sm text-white placeholder:text-zinc-500 focus:border-[#5865F2] focus:outline-none"
+                        />
+                    </label>
+                    <div className="space-y-1.5">
+                        <span className="text-xs font-semibold text-zinc-300">Roles permitidos</span>
+                        <MultiSelectChips
+                            items={(serverRoles ?? []).map((role) => ({ id: role.id, label: role.name, color: role.color }))}
+                            selectedIds={effectiveRoleIds(draft.allowedRoleIds, serverRoleIds)}
+                            onChange={(allowedRoleIds) => updateDraft({ allowedRoleIds })}
+                            placeholder="+ Agregar rol"
+                            emptyLabel={serverRoles === null && !rolesError ? "Cargando roles..." : "Todos pueden ejecutar"}
+                            loading={serverRoles === null && !rolesError}
+                            disabled={rolesError}
+                        />
+                        <span className="block text-[11px] text-zinc-500">
+                            {rolesError
+                                ? "No se pudieron cargar los roles; al guardar se conservan los permisos actuales."
+                                : "Alcanza con tener uno de los roles. Sin roles, cualquiera puede ejecutarlo."}
+                        </span>
+                    </div>
+                </div>
+
+                <div>
                     <div className="flex gap-1 rounded-xl border border-white/10 bg-[#1e1f22] p-1" role="tablist" aria-label="Modo de edición">
                         {([["simple", "Modo simple"], ["advanced", "Modo avanzado"]] as const).map(([mode, label]) => (
                             <button
@@ -313,27 +381,13 @@ export default function CustomCommandManager({ editing, setEditing }: CustomComm
                                 role="tab"
                                 aria-selected={draft.mode === mode}
                                 onClick={() => switchMode(mode)}
-                                className={`rounded-lg px-4 py-2 text-xs font-semibold cursor-pointer ${draft.mode === mode ? "bg-[#5865F2] text-white" : "text-zinc-400 hover:bg-white/5 hover:text-white"}`}
+                                className={`flex-1 rounded-lg px-4 py-2.5 text-sm font-semibold cursor-pointer ${draft.mode === mode ? "bg-[#5865F2] text-white" : "text-zinc-400 hover:bg-white/5 hover:text-white"}`}
                             >
                                 {label}
                             </button>
                         ))}
                     </div>
                 </div>
-
-                <label className="block space-y-1.5">
-                    <span className="flex items-baseline justify-between">
-                        <span className="text-xs font-semibold text-zinc-300">Descripción</span>
-                        <span className="text-[10px] text-zinc-500">{draft.description.length}/{DESCRIPTION_MAX_LENGTH}</span>
-                    </span>
-                    <input
-                        value={draft.description}
-                        maxLength={DESCRIPTION_MAX_LENGTH}
-                        onChange={(event) => updateDraft({ description: event.target.value })}
-                        placeholder="Describe brevemente qué hace este comando"
-                        className="w-full rounded-lg border border-white/10 bg-[#111214] px-3 py-2 text-sm text-white placeholder:text-zinc-500 focus:border-[#5865F2] focus:outline-none"
-                    />
-                </label>
 
                 {confirmSimple && (
                     <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-200" role="alertdialog">
@@ -375,7 +429,7 @@ export default function CustomCommandManager({ editing, setEditing }: CustomComm
             <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="space-y-0.5">
                     <p className="text-xs text-zinc-400">
-                        El bot responde cuando un mensaje coincide exactamente con el texto del comando.{" "}
+                        El bot responde cuando un mensaje coincide con el comando según su tipo de trigger.{" "}
                         <a href="/docs/comandos" target="_blank" rel="noopener" className="text-[#aab1ff] underline underline-offset-2 hover:text-white">
                             Ver la guía de comandos
                         </a>
@@ -425,6 +479,13 @@ export default function CustomCommandManager({ editing, setEditing }: CustomComm
                             <div className="min-w-0">
                                 <span className="font-mono text-sm text-white">{command.command}</span>
                                 {command.description && <p className="truncate text-[11px] text-zinc-400">{command.description}</p>}
+                                <p className="text-[11px] text-zinc-500">
+                                    {TRIGGER_TYPES.find((trigger) => trigger.id === command.triggerType)?.label}
+                                    {" · "}
+                                    {effectiveRoleIds(command.allowedRoleIds, serverRoleIds).length === 0
+                                        ? "Todos pueden ejecutar"
+                                        : `${effectiveRoleIds(command.allowedRoleIds, serverRoleIds).length} rol(es) permitidos`}
+                                </p>
                             </div>
                             <div className="flex items-center gap-2">
                                 <button

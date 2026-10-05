@@ -172,6 +172,12 @@ export default function ServerDashboard({ filteredGuilds, loadingGuilds }: serve
                                                                 setTitle("Reglas de canal")
                                                             }} title={`Administrar &rarr;`} />
                                                         </Section>
+                                                        <Section title="Tareas programadas">
+                                                            <ButtonDiscord onClick={() => {
+                                                                setState("scheduledTask");
+                                                                setTitle("Tareas programadas")
+                                                            }} title={`Administrar &rarr;`} />
+                                                        </Section>
                                                         <Section title="Comandos Personalizados">
                                                             <ButtonDiscord onClick={() => {
                                                                 setState("customCommand");

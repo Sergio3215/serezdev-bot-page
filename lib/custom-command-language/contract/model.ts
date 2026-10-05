@@ -12,9 +12,10 @@ export interface VoidType {
     name: "Void";
 }
 
+/** Tipo sin restricciones: `Unknown` lo infiere el motor; `Any` lo declara el contrato y acepta cualquier valor. */
 export interface UnknownType {
     kind: "unknown";
-    name: "Unknown";
+    name: "Unknown" | "Any";
 }
 
 export interface PropertyDefinition {
@@ -73,6 +74,8 @@ export interface FunctionDefinition {
     parameters: ParameterDefinition[];
     returns: Type;
     nullable: boolean;
+    /** Si está, la función devuelve el tipo de elemento del array recibido en ese parámetro (p. ej. elegir uno de una lista). */
+    elementTypeOfParameter?: number;
     /** Lo que el mensaje tiene que traer para que el comando se ejecute, p. ej. "mention". */
     requires: string[];
     signatures: string[];

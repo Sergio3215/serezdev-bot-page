@@ -1,5 +1,5 @@
 import Link from "next/link";
-import CodeBlock, { TextBlock } from "./CodeBlock";
+import CodeBlock from "./CodeBlock";
 import { FormatRules, FunctionCatalog, TypeCatalog } from "./ContractCatalog";
 
 const SECTIONS = [
@@ -123,14 +123,26 @@ ReplyMessage({
 
                     <Section id="activacion">
                         <P>
-                            El comando se activa cuando un mensaje contiene su texto de activación. Si el comando usa menciones, el texto puede ir antes o después de la mención:
+                            Cada comando tiene un texto de activación (por ejemplo <C>!darrol</C>) y un tipo de trigger que define cómo se compara con el mensaje. Distingue mayúsculas y minúsculas.
                         </P>
-                        <TextBlock text={`
-!darrol @Serez Dev
-@Serez Dev !darrol
-`} />
+                        <Table
+                            head={["Tipo de trigger", "Se activa cuando el mensaje…", "Ejemplo"]}
+                            rows={[
+                                ["Coincidencia exacta", "es exactamente el texto", <C key="a">!darrol</C>],
+                                ["Empieza con", "comienza con el texto", <C key="b">!darrol @Serez Dev</C>],
+                                ["Termina con", "termina con el texto", <C key="c">@Serez Dev !darrol</C>],
+                                ["Contiene", "incluye el texto en cualquier parte", <C key="d">hola !darrol @Serez Dev</C>],
+                            ]}
+                        />
                         <P>
-                            Distingue mayúsculas y minúsculas. Si varios comandos coinciden, se ejecuta el de texto más largo. Las menciones de roles, <C>@everyone</C> y <C>@here</C> no cuentan como menciones de miembros.
+                            Si un mensaje activa varios comandos, se ejecuta uno solo: primero la coincidencia exacta, después «Empieza con» o «Termina con», y por último «Contiene». Con la misma prioridad, gana el texto más largo.
+                        </P>
+                        <Sub>Roles permitidos</Sub>
+                        <P>
+                            Sin roles elegidos, cualquiera puede usar el comando. Con roles, alcanza con tener uno de ellos; si quien escribe no tiene ninguno, el bot ignora el mensaje sin responder.
+                        </P>
+                        <P>
+                            Las menciones de roles, <C>@everyone</C> y <C>@here</C> no cuentan como menciones de miembros.
                         </P>
                     </Section>
 
@@ -404,6 +416,17 @@ if (HasRole(author, role)) {
         message: "Rol agregado",
     })
 }
+`} />
+                        <Sub>Respuesta al azar</Sub>
+                        <P>
+                            <C>choose</C> elige un elemento de una lista y <C>displayName</C> devuelve el nombre de quien escribió. El operador <C>+</C> solo une textos con textos, así que los números se usan en cálculos y no dentro del mensaje.
+                        </P>
+                        <CodeBlock code={`
+const saludo = choose(["Hola", "Buenas", "Qué tal"])
+
+ReplyMessage({
+    message: saludo + ", " + displayName() + ". Hoy es " + date(),
+})
 `} />
                         <Sub>Mencionar a alguien en el mensaje</Sub>
                         <P>

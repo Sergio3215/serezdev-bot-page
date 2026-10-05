@@ -8,6 +8,7 @@ import JoinServerSetup from "@/Components/welcome/JoinServerSetup";
 import PricingPlans from "@/Components/billing/PricingPlans";
 import CustomCommandManager from "@/Components/customCommands/CustomCommandManager";
 import ChannelRuleManager from "@/Components/channelRules/ChannelRuleManager";
+import ScheduledTaskManager from "@/Components/scheduledTasks/ScheduledTaskManager";
 
 export default function ManageSetting({ title, state, setState }: ManageSettingType) {
     const [newFlag, setNewFlag] = useState<boolean>(false);
@@ -59,6 +60,11 @@ export default function ManageSetting({ title, state, setState }: ManageSettingT
                 {
                     state === "channelRule" && (
                         <ChannelRuleManager editing={newFlag} setEditing={setNewFlag} />
+                    )
+                }
+                {
+                    state === "scheduledTask" && (
+                        <ScheduledTaskManager editing={newFlag} setEditing={setNewFlag} />
                     )
                 }
                 {

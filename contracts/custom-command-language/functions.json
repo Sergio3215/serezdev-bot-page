@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "languageVersion": "1.1.0",
+  "languageVersion": "1.2.0",
   "caseSensitive": true,
   "callSyntax": "Identifier(arguments)",
   "userWritesAwait": false,
@@ -82,6 +82,137 @@
         "const members = GetMentionedMembers()",
         "for (const member of GetMentionedMembers()) {\n    AddRole(member, Role(\"371826690424569866\"))\n}"
       ]
+    },
+    "random": {
+      "kind": "query",
+      "description": "Genera un número aleatorio decimal, mayor o igual que 0 y menor que 1.",
+      "parameters": [],
+      "returns": { "type": "Number", "nullable": false, "readOnly": true },
+      "signatures": ["random(): Number"],
+      "examples": ["const chance = random()"]
+    },
+    "randomRange": {
+      "kind": "query",
+      "description": "Genera un entero aleatorio entre min y max, ambos incluidos. Los dos tienen que ser enteros y min no puede ser mayor que max.",
+      "parameters": [
+        { "name": "min", "type": "Number", "required": true },
+        { "name": "max", "type": "Number", "required": true }
+      ],
+      "returns": { "type": "Number", "nullable": false, "readOnly": true },
+      "signatures": ["randomRange(min: Number, max: Number): Number"],
+      "examples": ["const dado = randomRange(1, 6)"]
+    },
+    "choose": {
+      "kind": "query",
+      "description": "Elige al azar un elemento de una lista. La lista no puede estar vacía; devuelve un valor del mismo tipo que sus elementos.",
+      "parameters": [
+        { "name": "values", "type": "Array<Any>", "required": true }
+      ],
+      "returns": { "type": "Any", "nullable": false, "readOnly": true, "elementTypeOfParameter": 0 },
+      "signatures": ["choose(values: Array<T>): T"],
+      "examples": ["const respuesta = choose([\"Sí\", \"No\", \"Tal vez\"])"]
+    },
+    "now": {
+      "kind": "query",
+      "description": "Obtiene el momento actual como timestamp en milisegundos.",
+      "parameters": [],
+      "returns": { "type": "Number", "nullable": false, "readOnly": true },
+      "signatures": ["now(): Number"],
+      "examples": ["const inicio = now()"]
+    },
+    "date": {
+      "kind": "query",
+      "description": "Obtiene la fecha actual en UTC con formato AAAA-MM-DD.",
+      "parameters": [],
+      "returns": { "type": "String", "nullable": false, "readOnly": true },
+      "signatures": ["date(): String"],
+      "examples": ["const hoy = date()"]
+    },
+    "time": {
+      "kind": "query",
+      "description": "Obtiene la hora actual en UTC con formato HH:mm:ss.",
+      "parameters": [],
+      "returns": { "type": "String", "nullable": false, "readOnly": true },
+      "signatures": ["time(): String"],
+      "examples": ["const hora = time()"]
+    },
+    "username": {
+      "kind": "query",
+      "description": "Obtiene el nombre de usuario de quien escribió el comando.",
+      "parameters": [],
+      "returns": { "type": "String", "nullable": false, "readOnly": true },
+      "signatures": ["username(): String"],
+      "examples": ["ReplyMessage({ message: \"Hola, \" + username() })"]
+    },
+    "displayName": {
+      "kind": "query",
+      "description": "Obtiene el nombre visible en el servidor de quien escribió el comando. Si no tiene, usa su nombre de usuario.",
+      "parameters": [],
+      "returns": { "type": "String", "nullable": false, "readOnly": true },
+      "signatures": ["displayName(): String"],
+      "examples": ["ReplyMessage({ message: \"Hola, \" + displayName() })"]
+    },
+    "userId": {
+      "kind": "query",
+      "description": "Obtiene el ID de quien escribió el comando.",
+      "parameters": [],
+      "returns": { "type": "String", "nullable": false, "readOnly": true },
+      "signatures": ["userId(): String"],
+      "examples": ["const id = userId()"]
+    },
+    "channelId": {
+      "kind": "query",
+      "description": "Obtiene el ID del canal donde se escribió el comando.",
+      "parameters": [],
+      "returns": { "type": "String", "nullable": false, "readOnly": true },
+      "signatures": ["channelId(): String"],
+      "examples": ["const canal = Channel(channelId())"]
+    },
+    "serverId": {
+      "kind": "query",
+      "description": "Obtiene el ID del servidor.",
+      "parameters": [],
+      "returns": { "type": "String", "nullable": false, "readOnly": true },
+      "signatures": ["serverId(): String"],
+      "examples": ["const servidor = serverId()"]
+    },
+    "memberCount": {
+      "kind": "query",
+      "description": "Obtiene la cantidad de miembros del servidor.",
+      "parameters": [],
+      "returns": { "type": "Number", "nullable": false, "readOnly": true },
+      "signatures": ["memberCount(): Number"],
+      "examples": ["const miembros = memberCount()"]
+    },
+    "upper": {
+      "kind": "query",
+      "description": "Convierte un texto a mayúsculas.",
+      "parameters": [
+        { "name": "value", "type": "String", "required": true }
+      ],
+      "returns": { "type": "String", "nullable": false, "readOnly": true },
+      "signatures": ["upper(value: String): String"],
+      "examples": ["upper(\"hola\")"]
+    },
+    "lower": {
+      "kind": "query",
+      "description": "Convierte un texto a minúsculas.",
+      "parameters": [
+        { "name": "value", "type": "String", "required": true }
+      ],
+      "returns": { "type": "String", "nullable": false, "readOnly": true },
+      "signatures": ["lower(value: String): String"],
+      "examples": ["lower(\"HOLA\")"]
+    },
+    "length": {
+      "kind": "query",
+      "description": "Obtiene la cantidad de caracteres de un texto o de elementos de una lista.",
+      "parameters": [
+        { "name": "value", "type": "String | Array<Any>", "required": true }
+      ],
+      "returns": { "type": "Number", "nullable": false, "readOnly": true },
+      "signatures": ["length(value: String | Array<Any>): Number"],
+      "examples": ["length(\"Serez\")"]
     },
     "HasRole": {
       "kind": "query",

@@ -603,10 +603,32 @@ export function arrayOf(element: Type, readOnly: boolean): Type {
     return { kind: "array", name: `Array<${element.name}>`, element, readOnly };
 }
 
+/** Parte una unión por los `|` que no están dentro de `< >`. */
+function splitUnion(text: string): string[] {
+    const parts: string[] = [];
+    let depth = 0;
+    let start = 0;
+    for (let i = 0; i < text.length; i++) {
+        if (text[i] === "<") depth++;
+        else if (text[i] === ">") depth--;
+        else if (text[i] === "|" && depth === 0) {
+            parts.push(text.slice(start, i).trim());
+            start = i + 1;
+        }
+    }
+    parts.push(text.slice(start).trim());
+    return parts;
+}
+
 function resolveTypeExpression(expression: string, typeByName: Map<string, Type>, path: string): Type {
     const text = expression.trim();
-    if (text.endsWith("| Null")) {
-        return nullableOf(resolveTypeExpression(text.slice(0, -"| Null".length), typeByName, path));
+    const members = splitUnion(text);
+    if (members.length > 1) {
+        const resolved = members.filter((member) => member !== "Null").map((member) => resolveTypeExpression(member, typeByName, path));
+        const union: Type = resolved.length === 1
+            ? resolved[0]
+            : { kind: "union", name: resolved.map((member) => member.name).join(" | "), members: resolved };
+        return members.includes("Null") ? nullableOf(union) : union;
     }
     const array = /^Array<(.+)>$/.exec(text);
     if (array) return arrayOf(resolveTypeExpression(array[1], typeByName, path), false);
@@ -633,7 +655,9 @@ function loadTypes(
         const definition = asObject(value, path);
         onlyKeys(definition, ["kind", "readOnly", "additionalProperties", "properties", "requiresAny", "aggregateConstraints", "literal"], path);
         const kind = oneOf(str(definition, "kind", path), ["scalar", "object", "void"], `${path}.kind`);
-        if (kind === "scalar") {
+        if (kind === "scalar" && name === "Any") {
+            typeByName.set(name, { kind: "unknown", name: "Any" });
+        } else if (kind === "scalar") {
             const scalar = oneOf(name, ["String", "Number", "Boolean", "Null"], path) as ScalarName;
             typeByName.set(name, { kind: "scalar", name: scalar });
         } else if (kind === "void") {
@@ -748,11 +772,18 @@ function loadFunctions(
         });
 
         const returnsJson = obj(definition, "returns", path);
-        onlyKeys(returnsJson, ["type", "nullable", "readOnly"], `${path}.returns`);
+        onlyKeys(returnsJson, ["type", "nullable", "readOnly", "elementTypeOfParameter"], `${path}.returns`);
         let returns = resolveTypeExpression(str(returnsJson, "type", `${path}.returns`), typeByName, `${path}.returns.type`);
         if (returns.kind === "array" && bool(returnsJson, "readOnly", `${path}.returns`)) returns = arrayOf(returns.element, true);
         const nullable = bool(returnsJson, "nullable", `${path}.returns`);
         if (nullable) returns = nullableOf(returns);
+        let elementTypeOfParameter: number | undefined;
+        if (returnsJson.elementTypeOfParameter !== undefined) {
+            elementTypeOfParameter = int(returnsJson, "elementTypeOfParameter", `${path}.returns`);
+            if (parameters[elementTypeOfParameter]?.type.kind !== "array") {
+                fail(`${path}.returns.elementTypeOfParameter`, "tiene que señalar un parámetro de tipo array");
+            }
+        }
 
         functionByName.set(name, {
             name,
@@ -761,6 +792,7 @@ function loadFunctions(
             parameters,
             returns,
             nullable,
+            ...(elementTypeOfParameter === undefined ? {} : { elementTypeOfParameter }),
             requires: definition.requires === undefined
                 ? []
                 : strArray(definition, "requires", path).map((requirement) => oneOf(requirement, FUNCTION_REQUIREMENTS, `${path}.requires`)),

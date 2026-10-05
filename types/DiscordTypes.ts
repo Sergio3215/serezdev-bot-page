@@ -42,6 +42,7 @@ export interface DiscordRole {
     color: string;
     position: number;
     assignable: boolean;
+    managed?: boolean;
 }
 
 export interface roleDropdownType {

@@ -1,4 +1,4 @@
-import { FORMAT_DIAGNOSTICS, unaryRuleName } from "../contract/loader";
+import { FORMAT_DIAGNOSTICS, nullableOf, unaryRuleName } from "../contract/loader";
 import type {
     FunctionDefinition,
     LanguageContract,
@@ -375,6 +375,9 @@ class RuleEngine {
                 format: parameter.format,
             });
         });
+        const genericIndex = definition.elementTypeOfParameter;
+        const source = genericIndex === undefined ? undefined : argumentTypes[genericIndex];
+        if (source?.kind === "array") return definition.nullable ? nullableOf(source.element) : source.element;
         return definition.returns;
     }
 
