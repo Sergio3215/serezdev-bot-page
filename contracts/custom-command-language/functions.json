@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "languageVersion": "1.2.0",
+  "languageVersion": "1.3.0",
   "caseSensitive": true,
   "callSyntax": "Identifier(arguments)",
   "userWritesAwait": false,
@@ -213,6 +213,46 @@
       "returns": { "type": "Number", "nullable": false, "readOnly": true },
       "signatures": ["length(value: String | Array<Any>): Number"],
       "examples": ["length(\"Serez\")"]
+    },
+    "string": {
+      "kind": "query",
+      "description": "Convierte un texto, número o booleano a texto.",
+      "parameters": [
+        { "name": "value", "type": "String | Number | Boolean", "required": true }
+      ],
+      "returns": { "type": "String", "nullable": false, "readOnly": true },
+      "signatures": ["string(value: String | Number | Boolean): String"],
+      "examples": ["\"Somos \" + string(memberCount())"]
+    },
+    "int": {
+      "kind": "query",
+      "description": "Convierte un número o un texto entero a número entero. Los decimales se truncan hacia cero; un texto como \"10.5\" o \"abc\" produce un error.",
+      "parameters": [
+        { "name": "value", "type": "Number | String", "required": true }
+      ],
+      "returns": { "type": "Number", "nullable": false, "readOnly": true },
+      "signatures": ["int(value: Number | String): Number"],
+      "examples": ["int(\"10\")"]
+    },
+    "decimal": {
+      "kind": "query",
+      "description": "Convierte un número o un texto decimal (por ejemplo \"10.5\") a número. Un texto inválido produce un error.",
+      "parameters": [
+        { "name": "value", "type": "Number | String", "required": true }
+      ],
+      "returns": { "type": "Number", "nullable": false, "readOnly": true },
+      "signatures": ["decimal(value: Number | String): Number"],
+      "examples": ["decimal(\"10.5\")"]
+    },
+    "bool": {
+      "kind": "query",
+      "description": "Convierte un booleano o el texto exacto \"true\" o \"false\" a booleano. Cualquier otro texto produce un error.",
+      "parameters": [
+        { "name": "value", "type": "Boolean | String", "required": true }
+      ],
+      "returns": { "type": "Boolean", "nullable": false, "readOnly": true },
+      "signatures": ["bool(value: Boolean | String): Boolean"],
+      "examples": ["bool(\"true\")"]
     },
     "HasRole": {
       "kind": "query",

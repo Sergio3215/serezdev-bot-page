@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "languageVersion": "1.2.0",
+  "languageVersion": "1.3.0",
   "typeKinds": ["scalar", "object", "array", "union", "void"],
   "types": {
     "String": { "kind": "scalar" },
