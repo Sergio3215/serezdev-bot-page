@@ -12,6 +12,7 @@ import ManageSetting from "@/Components/dashboard/ManageSettings";
 import ButtonDiscord from "@/Components/ui/ButtonDiscord";
 import type { PlanId } from "@/types/Billing";
 import type { birthdayType } from "@/types/Elements";
+import { DASHBOARD_CATEGORIES, featuresOf, type DashboardFeature } from "@/lib/dashboardFeatures";
 
 const PLAN_BADGE: Record<PlanId, string> = {
     free: "border-white/15 bg-white/5 text-zinc-300",
@@ -24,7 +25,7 @@ export default function ServerDashboard({ filteredGuilds, loadingGuilds }: serve
     const idServer = (params?.server as string) || "";
 
     const plan = useFetchServerPlan(idServer);
-    const restartAllowed = plan !== null && canRestartBot(plan, idServer);
+    const restartAllowed = canRestartBot(idServer);
 
     const [isResetting, setIsResetting] = useState(false);
     const [statusMessage, setStatusMessage] = useState<{ text: string; isError: boolean } | null>(null);
@@ -47,25 +48,25 @@ export default function ServerDashboard({ filteredGuilds, loadingGuilds }: serve
             const data = await res.json();
             if (res.ok) {
                 setStatusMessage({ text: "¡Bot reiniciado con éxito!", isError: false });
-                setIsResetting(false);
             } else {
                 setStatusMessage({ text: data.error || "Error al reiniciar el bot.", isError: true });
             }
         } catch (err) {
             console.error("Error al reiniciar bot:", err);
             setStatusMessage({ text: "Error de conexión al solicitar el reinicio.", isError: true });
+        } finally {
+            setIsResetting(false);
         }
     };
 
-    const comprobateBirthdaySetup = async () => {
+    const comprobateBirthdaySetup = async (feature: DashboardFeature) => {
         try {
             const ftch = await fetch(botApiUrl(idServer, "birthday/setup"));
             const dto = await ftch.json();
 
             if (dto.data && dto.data.length !== 0) {
                 setBirthdaySetup(dto.data[0]);
-                setState("birthday");
-                setTitle("Administrá el Recordatorio");
+                open(feature);
             } else {
                 setShowBirthdayModal(true);
             }
@@ -73,6 +74,16 @@ export default function ServerDashboard({ filteredGuilds, loadingGuilds }: serve
             console.error("Error al comprobar cumpleaños:", err);
             setShowBirthdayModal(true);
         }
+    };
+
+    const open = (feature: DashboardFeature) => {
+        setState(feature.id);
+        setTitle(feature.title);
+    };
+
+    const openFeature = (feature: DashboardFeature) => {
+        if (feature.id === "birthday") comprobateBirthdaySetup(feature);
+        else open(feature);
     };
 
     if (idServer && loadingGuilds && !filteredGuilds.some((guild) => guild.id === idServer)) {
@@ -146,50 +157,31 @@ export default function ServerDashboard({ filteredGuilds, loadingGuilds }: serve
                                                 <Link href="/dashboard" className="cursor-pointer hover:underline underline-offset-4"> &larr; Atras</Link>
                                             </div>
                                         )}
-                                        <div className="flex flex-row flex-wrap gap-6 justify-center items-start">
-                                            {
-                                                state == "" && (
-                                                    <>
-                                                        <Section title="Administrá el Recordatorio de Cumpleaños">
-                                                            <ButtonDiscord onClick={() => {
-                                                                comprobateBirthdaySetup();
-                                                            }} title={`Administrar &rarr;`} />
-                                                        </Section>
-                                                        <Section title="Bienvenida al Servidor">
-                                                            <ButtonDiscord onClick={() => {
-                                                                setState("joinServer");
-                                                                setTitle("Administrá la Bienvenida")
-                                                            }} title={`Administrar &rarr;`} />
-                                                        </Section>
-                                                        <Section title="Administración de Interacciones">
-                                                            <ButtonDiscord onClick={() => {
-                                                                setState("gif");
-                                                                setTitle("Administrador de Interacciones")
-                                                            }} title={`Administrar &rarr;`} />
-                                                        </Section>
-                                                        <Section title="Reglas de canal">
-                                                            <ButtonDiscord onClick={() => {
-                                                                setState("channelRule");
-                                                                setTitle("Reglas de canal")
-                                                            }} title={`Administrar &rarr;`} />
-                                                        </Section>
-                                                        <Section title="Tareas programadas">
-                                                            <ButtonDiscord onClick={() => {
-                                                                setState("scheduledTask");
-                                                                setTitle("Tareas programadas")
-                                                            }} title={`Administrar &rarr;`} />
-                                                        </Section>
-                                                        <Section title="Comandos Personalizados">
-                                                            <ButtonDiscord onClick={() => {
-                                                                setState("customCommand");
-                                                                setTitle("Comandos Personalizados")
-                                                            }} title={`Administrar &rarr;`} />
-                                                        </Section>
-                                                        <div className="flex flex-col max-w-lg w-full items-center">
+                                        {state == "" && (
+                                            <div className="mx-auto w-full max-w-5xl space-y-10">
+                                                {DASHBOARD_CATEGORIES.map((category) => (
+                                                    <section key={category.id} aria-labelledby={`category-${category.id}`} className="space-y-4">
+                                                        <div>
+                                                            <h2 id={`category-${category.id}`} className="text-xs font-bold uppercase tracking-widest text-zinc-400">{category.label}</h2>
+                                                            <p className="mt-1 text-sm text-zinc-500">{category.description}</p>
+                                                        </div>
+                                                        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                                                            {featuresOf(category.id).map((feature) => (
+                                                                <Section key={feature.id} title={feature.label}>
+                                                                    <ButtonDiscord onClick={() => openFeature(feature)} title={"Administrar &rarr;"} />
+                                                                </Section>
+                                                            ))}
+                                                        </div>
+                                                    </section>
+                                                ))}
+                                                {restartAllowed && (
+                                                    <section aria-labelledby="category-server-actions" className="space-y-4 border-t border-white/10 pt-8">
+                                                        <h2 id="category-server-actions" className="text-xs font-bold uppercase tracking-widest text-zinc-400">Acciones del servidor</h2>
+                                                        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                                                             <Section title="Reiniciar el Bot">
                                                                 <button
                                                                     onClick={resetBot}
-                                                                    disabled={isResetting || !restartAllowed}
+                                                                    disabled={isResetting}
                                                                     className="inline-flex items-center gap-2 rounded-xl bg-[#6e0a0a] shadow-[#bd2e2e]/20 hover:bg-[#bd2e2e] px-6 py-4 text-xs font-semibold text-white shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed mb-2 cursor-pointer"
                                                                 >
                                                                     {isResetting ? (
@@ -198,25 +190,25 @@ export default function ServerDashboard({ filteredGuilds, loadingGuilds }: serve
                                                                             <span>Reiniciando bot...</span>
                                                                         </>
                                                                     ) : (
-                                                                        <span>{restartAllowed ? "Reiniciar Bot" : "Reiniciar Bot (Pro)"}</span>
+                                                                        <span>Reiniciar Bot</span>
                                                                     )}
                                                                 </button>
                                                             </Section>
-                                                            {statusMessage && (
-                                                                <div
-                                                                    className={`mt-4 rounded-xl p-3 text-xs border ${statusMessage.isError
-                                                                        ? "border-red-500/30 bg-red-500/10 text-red-300"
-                                                                        : "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
-                                                                        }`}
-                                                                >
-                                                                    {statusMessage.text}
-                                                                </div>
-                                                            )}
                                                         </div>
-                                                    </>
-                                                )
-                                            }
-                                        </div>
+                                                        {statusMessage && (
+                                                            <div
+                                                                className={`rounded-xl p-3 text-xs border ${statusMessage.isError
+                                                                    ? "border-red-500/30 bg-red-500/10 text-red-300"
+                                                                    : "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
+                                                                    }`}
+                                                            >
+                                                                {statusMessage.text}
+                                                            </div>
+                                                        )}
+                                                    </section>
+                                                )}
+                                            </div>
+                                        )}
 
                                         {
                                             state != "" && (

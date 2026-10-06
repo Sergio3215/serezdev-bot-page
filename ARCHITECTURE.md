@@ -16,7 +16,8 @@ Responsable de:
 - BFF: único punto de entrada del navegador hacia el bot (`app/api/guilds/[server]/backend/[...path]`).
 - Autorización de administración de guild (`checkGuildAdmin`: owner, `ADMINISTRATOR` o `MANAGE_GUILD`).
 - Reglas de negocio: planes, precios, features por plan, límites comerciales (`lib/plans.ts`), checkout y
-  webhooks de pago, gating en UI y en el proxy (`planLimitError`, edición de GIFs por defecto, reinicio).
+  webhooks de pago, gating en UI y en el proxy (`planLimitError`, edición de GIFs por defecto) y la lista de
+  servidores que pueden reiniciar el bot (`canRestartBot`).
 - Contratos JSON del lenguaje de Custom Commands (`contracts/custom-command-language/`): permiten que el
   editor entienda el lenguaje (diagnostics, autocomplete, formatter, Simple Mode). No ejecutan nada.
 

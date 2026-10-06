@@ -38,7 +38,6 @@ export const PLANS: Record<PlanId, Plan> = {
             "Hasta 10 GIFs personalizados",
             "Hasta 15 comandos personalizados",
             "Hasta 15 reglas de canal",
-            "Reinicio del bot bajo demanda",
         ],
     },
     premium: {
@@ -79,19 +78,18 @@ export const PLAN_LIMITS: Record<PlanId, {
     customCommands: number | null;
     channelRules: number | null;
     cardBackgrounds: BackgroundType[];
-    botRestart: boolean;
     editDefaultGifs: boolean;
 }> = {
-    free: { customGifs: 5, customCommands: 4, channelRules: 3, cardBackgrounds: ["color"], botRestart: false, editDefaultGifs: false },
-    pro: { customGifs: 10, customCommands: 15, channelRules: 15, cardBackgrounds: ["color", "gradient"], botRestart: true, editDefaultGifs: false },
-    premium: { customGifs: null, customCommands: null, channelRules: null, cardBackgrounds: ["color", "gradient", "image"], botRestart: true, editDefaultGifs: true },
+    free: { customGifs: 5, customCommands: 4, channelRules: 3, cardBackgrounds: ["color"], editDefaultGifs: false },
+    pro: { customGifs: 10, customCommands: 15, channelRules: 15, cardBackgrounds: ["color", "gradient"], editDefaultGifs: false },
+    premium: { customGifs: null, customCommands: null, channelRules: null, cardBackgrounds: ["color", "gradient", "image"], editDefaultGifs: true },
 };
 
-/** Servidores que pueden reiniciar el bot aunque sean Free. */
-export const BOT_RESTART_SERVER_IDS = ["748652112485023854"];
+/** Únicos servidores que pueden reiniciar el bot, sin importar su plan. */
+export const BOT_RESTART_SERVER_IDS = ["1235045954491781150", "748652112485023854"];
 
-export function canRestartBot(plan: PlanId, serverId: string): boolean {
-    return PLAN_LIMITS[plan].botRestart || BOT_RESTART_SERVER_IDS.includes(serverId);
+export function canRestartBot(serverId: string): boolean {
+    return BOT_RESTART_SERVER_IDS.includes(serverId);
 }
 
 export function allowedCardBackgrounds(plan: PlanId, serverId: string): BackgroundType[] {
