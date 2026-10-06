@@ -11,6 +11,7 @@ import Section from "@/Components/ui/Section";
 import ManageSetting from "@/Components/dashboard/ManageSettings";
 import ButtonDiscord from "@/Components/ui/ButtonDiscord";
 import type { PlanId } from "@/types/Billing";
+import type { birthdayType } from "@/types/Elements";
 
 const PLAN_BADGE: Record<PlanId, string> = {
     free: "border-white/15 bg-white/5 text-zinc-300",
@@ -32,6 +33,7 @@ export default function ServerDashboard({ filteredGuilds, loadingGuilds }: serve
     const [title, setTitle] = useState("");
 
     const [showBirthdayModal, setShowBirthdayModal] = useState<boolean>(false);
+    const [birthdaySetup, setBirthdaySetup] = useState<birthdayType | undefined>(undefined);
 
     const resetBot = async () => {
         setIsResetting(true);
@@ -61,6 +63,7 @@ export default function ServerDashboard({ filteredGuilds, loadingGuilds }: serve
             const dto = await ftch.json();
 
             if (dto.data && dto.data.length !== 0) {
+                setBirthdaySetup(dto.data[0]);
                 setState("birthday");
                 setTitle("Administrá el Recordatorio");
             } else {
@@ -222,7 +225,8 @@ export default function ServerDashboard({ filteredGuilds, loadingGuilds }: serve
                                                 <ManageSetting
                                                     state={state}
                                                     setState={setState}
-                                                    title={title} />
+                                                    title={title}
+                                                    birthdaySetup={birthdaySetup} />
                                             )
                                         }
                                     </div>

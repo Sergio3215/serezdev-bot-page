@@ -118,7 +118,7 @@ export default function Container({ children, site }: ContainerProps) {
     const getAvatarUrl = (u: DiscordUser) => {
         // console.log(u.avatar)
         if (u.avatar) {
-            return `https://cdn.discordapp.com/avatars/${u.id}/${u.avatar}.png?size=256`;
+            return `https://cdn.discordapp.com/avatars/${u.id}/${u.avatar}.png?size=64`;
         }
         const defaultIndex = Math.abs(Number(BigInt(u.id || "0") >> BigInt(22)) % 6);
         return `https://cdn.discordapp.com/embed/avatars/${defaultIndex}.png`;

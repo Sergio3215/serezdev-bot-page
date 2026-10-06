@@ -19,9 +19,20 @@ export async function GET(request: NextRequest) {
   const userToken = tokenCookie.value;
   const botToken = process.env.DISCORD_BOT_TOKEN;
 
+  const botAuthorization = botToken && botToken.trim() !== "" ? `Bot ${botToken.trim()}` : null;
+  const hasBotToken = botAuthorization !== null;
+
   try {
-    // 1. Obtener servidores donde está el usuario
-    const userGuildsRes = await fetchDiscordGuilds(`Bearer ${userToken}`);
+    // 1. Servidores del usuario y del bot: son independientes, se piden a la vez
+    const [userGuildsRes, botGuildsRes] = await Promise.all([
+      fetchDiscordGuilds(`Bearer ${userToken}`),
+      botAuthorization
+        ? fetchDiscordGuilds(botAuthorization).catch((botErr: unknown) => {
+            console.error("Fallo de conexión al consultar bot guilds:", botErr);
+            return null;
+          })
+        : Promise.resolve(null),
+    ]);
 
     if (!userGuildsRes.ok && userGuildsRes.status === 401) {
       return NextResponse.json(
@@ -63,26 +74,16 @@ export async function GET(request: NextRequest) {
       }
     });
 
-    // 3. Si hay DISCORD_BOT_TOKEN, consultar los servidores donde el bot está añadido
+    // 3. Si hay DISCORD_BOT_TOKEN, los servidores donde el bot está añadido
     let botGuildIds: Set<string> | null = null;
-    let hasBotToken = false;
 
-    if (botToken && botToken.trim() !== "") {
-      hasBotToken = true;
-      try {
-        const botGuildsRes = await fetchDiscordGuilds(`Bot ${botToken.trim()}`);
-
-        if (botGuildsRes.ok) {
-          botGuildIds = new Set(botGuildsRes.guilds.map((g) => g.id));
-        } else {
-          console.error(
-            "Error al consultar servidores del bot con DISCORD_BOT_TOKEN:",
-            botGuildsRes.body
-          );
-        }
-      } catch (botErr) {
-        console.error("Fallo de conexión al consultar bot guilds:", botErr);
-      }
+    if (botGuildsRes?.ok) {
+      botGuildIds = new Set(botGuildsRes.guilds.map((g) => g.id));
+    } else if (botGuildsRes) {
+      console.error(
+        "Error al consultar servidores del bot con DISCORD_BOT_TOKEN:",
+        botGuildsRes.body
+      );
     }
 
     // Clasificar los servidores

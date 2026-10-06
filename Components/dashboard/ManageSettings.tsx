@@ -1,16 +1,22 @@
 "use client"
 import { ManageSettingType } from "@/types/Elements";
-import InteractionManage from "@/Components/gifs/InteractionManage";
 import ButtonDiscord from "@/Components/ui/ButtonDiscord";
+import dynamic from "next/dynamic";
 import { useState } from "react";
-import BirthdaySetup from "@/Components/birthday/BirthdaySetup";
-import JoinServerSetup from "@/Components/welcome/JoinServerSetup";
-import PricingPlans from "@/Components/billing/PricingPlans";
-import CustomCommandManager from "@/Components/customCommands/CustomCommandManager";
-import ChannelRuleManager from "@/Components/channelRules/ChannelRuleManager";
-import ScheduledTaskManager from "@/Components/scheduledTasks/ScheduledTaskManager";
 
-export default function ManageSetting({ title, state, setState }: ManageSettingType) {
+function FeatureLoading() {
+    return <p className="mt-6 text-center text-xs text-zinc-400">Cargando...</p>;
+}
+
+const InteractionManage = dynamic(() => import("@/Components/gifs/InteractionManage"), { loading: FeatureLoading });
+const BirthdaySetup = dynamic(() => import("@/Components/birthday/BirthdaySetup"), { loading: FeatureLoading });
+const JoinServerSetup = dynamic(() => import("@/Components/welcome/JoinServerSetup"), { loading: FeatureLoading });
+const PricingPlans = dynamic(() => import("@/Components/billing/PricingPlans"), { loading: FeatureLoading });
+const CustomCommandManager = dynamic(() => import("@/Components/customCommands/CustomCommandManager"), { loading: FeatureLoading });
+const ChannelRuleManager = dynamic(() => import("@/Components/channelRules/ChannelRuleManager"), { loading: FeatureLoading });
+const ScheduledTaskManager = dynamic(() => import("@/Components/scheduledTasks/ScheduledTaskManager"), { loading: FeatureLoading });
+
+export default function ManageSetting({ title, state, setState, birthdaySetup }: ManageSettingType) {
     const [newFlag, setNewFlag] = useState<boolean>(false);
 
     return (
@@ -39,7 +45,7 @@ export default function ManageSetting({ title, state, setState }: ManageSettingT
                 {
                     state === "birthday" && (
                         <>
-                            <BirthdaySetup />
+                            <BirthdaySetup initialSetup={birthdaySetup} />
                         </>
                     )
                 }

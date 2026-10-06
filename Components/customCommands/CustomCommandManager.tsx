@@ -2,6 +2,7 @@
 
 import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
+import dynamic from "next/dynamic";
 import { botApiUrl } from "@/lib/botApi";
 import { PLAN_LIMITS, PLANS } from "@/lib/plans";
 import { useServerPlan } from "@/lib/useServerPlan";
@@ -10,9 +11,13 @@ import { buildCustomCommandPayload, effectiveRoleIds, normalizeCustomCommand, TR
 import type { CustomCommand, TriggerType } from "@/types/CustomCommand";
 import type { DiscordChannel, DiscordRole } from "@/types/DiscordTypes";
 import MultiSelectChips from "@/Components/shared/MultiSelectChips";
-import CodeEditor, { type CodeEditorHandle } from "./editor/CodeEditor";
+import type { CodeEditorHandle } from "./editor/CodeEditor";
 import CommandPreview from "./CommandPreview";
 import SimpleCommandForm, { canShowInSimpleMode, SIMPLE_FUNCTIONS, simpleDiagnosticMessage } from "./SimpleCommandForm";
+
+const CodeEditor = dynamic(() => import("./editor/CodeEditor"), {
+    loading: () => <div className="min-h-[220px] rounded-xl border border-white/10 bg-[#111214]" aria-hidden="true" />,
+});
 
 interface Draft {
     id: string | null;

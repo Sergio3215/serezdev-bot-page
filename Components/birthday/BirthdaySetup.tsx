@@ -6,23 +6,23 @@ import { useParams } from "next/navigation";
 import BirthdayCardEditor from "@/Components/birthday/BirthdayCardEditor";
 import { botApiUrl } from "@/lib/botApi";
 
-export default function BirthdaySetup() {
+export default function BirthdaySetup({ initialSetup }: { initialSetup?: birthdayType }) {
     const params = useParams();
     const idServer = (params?.server as string) || "";
 
     const [tab, setTab] = useState<"message" | "image">("message");
 
-    const [birthdayData, setBirthdayData] = useState<birthdayType | null>(null);
-    const [message, setMessage] = useState<string>("");
-    const [originalMessage, setOriginalMessage] = useState<string>("");
-    const [isLoading, setIsLoading] = useState<boolean>(true);
+    const [birthdayData, setBirthdayData] = useState<birthdayType | null>(initialSetup ?? null);
+    const [message, setMessage] = useState<string>(initialSetup?.message ?? "");
+    const [originalMessage, setOriginalMessage] = useState<string>(initialSetup?.message ?? "");
+    const [isLoading, setIsLoading] = useState<boolean>(!initialSetup);
     const [isSaving, setIsSaving] = useState<boolean>(false);
     const [statusFeedback, setStatusFeedback] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
     const textareaRef = useRef<HTMLTextAreaElement>(null);
 
     useEffect(() => {
-        if (!idServer) return;
+        if (!idServer || initialSetup) return;
 
         let isCancelled = false;
 
@@ -61,7 +61,7 @@ export default function BirthdaySetup() {
         return () => {
             isCancelled = true;
         };
-    }, [idServer]);
+    }, [idServer, initialSetup]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();

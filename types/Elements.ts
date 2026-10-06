@@ -14,6 +14,7 @@ export interface ManageSettingType {
     state: string;
     setState: (value: string) => void;
     title: string;
+    birthdaySetup?: birthdayType;
 }
 
 export interface GifDataType {

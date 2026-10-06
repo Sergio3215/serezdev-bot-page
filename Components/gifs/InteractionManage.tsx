@@ -131,6 +131,8 @@ export default function InteractionManage({ newFlag, setNewFlag }: interactionMa
                                                             <img
                                                                 src={gg.url}
                                                                 alt={`GIF ${gg.order} de ${formattedName}`}
+                                                                loading="lazy"
+                                                                decoding="async"
                                                                 className="max-h-full max-w-full object-contain rounded-lg transition-transform duration-300 group-hover:scale-105"
                                                             />
                                                         </div>
