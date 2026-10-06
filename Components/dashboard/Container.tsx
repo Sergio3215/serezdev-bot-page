@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import NavBar from "@/Components/dashboard/NavBar";
 import DashboardComponent from "@/Components/dashboard/DashboardComponent";
@@ -9,9 +9,8 @@ import { DiscordGuild, DiscordUser } from "@/types/DiscordTypes";
 import ServerDashboard from "@/Components/dashboard/ServerDashboard";
 
 import { ContainerProps } from "@/types/Elements"
+import { loadGuilds } from "@/lib/guildLoading";
 
-
-const MAX_GUILD_RETRIES = 3;
 
 export default function Container({ children, site }: ContainerProps) {
     const router = useRouter();
@@ -24,6 +23,7 @@ export default function Container({ children, site }: ContainerProps) {
     const [activeTab] = useState<"withBot" | "all">("withBot");
     const [searchQuery, setSearchQuery] = useState("");
     const [loggingOut, setLoggingOut] = useState(false);
+    const session = useRef<AbortController | null>(null);
 
     const clientId = process.env.NEXT_PUBLIC_DISCORD_CLIENTID || "1312903712238469170";
     const redirectUri = encodeURIComponent(
@@ -31,79 +31,60 @@ export default function Container({ children, site }: ContainerProps) {
     );
     const reauthUrl = `https://discord.com/oauth2/authorize?client_id=${clientId}&response_type=code&redirect_uri=${redirectUri}&scope=identify%20guilds`;
 
-    // 1. Validar usuario autenticado
     useEffect(() => {
-        async function fetchUser() {
+        const controller = new AbortController();
+        session.current = controller;
+        const { signal } = controller;
+
+        async function fetchUser(): Promise<boolean> {
             try {
-                const res = await fetch("/api/auth/me");
-                if (!res.ok) {
-                    router.replace("/");
-                    return;
-                }
-                const data = await res.json();
-                if (data.authenticated && data.user) {
+                const res = await fetch("/api/auth/me", { signal });
+                const data = res.ok ? await res.json() : null;
+                if (signal.aborted) return false;
+                if (data?.authenticated && data.user) {
                     setUser(data.user);
-                } else {
-                    router.replace("/");
+                    return true;
                 }
             } catch (err) {
+                if (signal.aborted) return false;
                 console.error("Error al obtener usuario:", err);
-                router.replace("/");
             } finally {
-                setLoadingUser(false);
+                if (!signal.aborted) setLoadingUser(false);
             }
+            controller.abort();
+            router.replace("/");
+            return false;
         }
 
-        fetchUser();
-    }, [router]);
-
-    // 2. Obtener servidores donde es Admin y el bot está añadido
-    useEffect(() => {
-        if (!user) return;
-
-        let cancelled = false;
-
-        /** Discord limita mucho la lista de servidores: ante un 429 espera lo que indica y reintenta. */
-        async function fetchGuilds() {
-            setLoadingGuilds(true);
-            try {
-                for (let attempt = 0; attempt <= MAX_GUILD_RETRIES; attempt++) {
-                    const res = await fetch("/api/guilds", { cache: "no-store" });
-                    const data = await res.json().catch(() => ({}));
-                    if (cancelled) return;
-
-                    // Si falta el scope 'guilds' del login previo, redirigir automáticamente para actualizar credenciales
-                    if (res.status === 401 && data.needsReauth) {
-                        window.location.href = reauthUrl;
-                        return;
-                    }
-
-                    if (res.ok) {
-                        setBotGuilds(data.botGuilds || []);
-                        setOtherAdminGuilds(data.otherAdminGuilds || []);
-                        return;
-                    }
-
-                    if (res.status !== 429 || attempt === MAX_GUILD_RETRIES) return;
-                    const seconds = Math.min(Math.max(Number(data.retryAfter) || 1, 0.5), 10);
-                    await new Promise((resolve) => setTimeout(resolve, seconds * 1000));
-                    if (cancelled) return;
+        const authenticated = fetchUser();
+        loadGuilds({
+            authenticated,
+            signal,
+            request: async () => {
+                const res = await fetch("/api/guilds", { cache: "no-store", signal });
+                const data = await res.json().catch(() => ({}));
+                return { ok: res.ok, status: res.status, data };
+            },
+        })
+            .then((outcome) => {
+                if (outcome.kind === "reauth") window.location.href = reauthUrl;
+                if (outcome.kind === "loaded") {
+                    setBotGuilds(outcome.botGuilds);
+                    setOtherAdminGuilds(outcome.otherAdminGuilds);
                 }
-            } catch (err) {
-                console.error("Error al consultar servidores:", err);
-            } finally {
-                if (!cancelled) setLoadingGuilds(false);
-            }
-        }
-
-        fetchGuilds();
-        return () => {
-            cancelled = true;
-        };
-    }, [user, reauthUrl]);
+            })
+            .catch((err) => {
+                if (!signal.aborted) console.error("Error al consultar servidores:", err);
+            })
+            .finally(() => {
+                if (!signal.aborted) setLoadingGuilds(false);
+            });
+        return () => controller.abort();
+    }, [router, reauthUrl]);
 
     const handleLogout = async () => {
         setLoggingOut(true);
+        session.current?.abort();
         try {
             await fetch("/api/auth/logout", { method: "POST" });
         } catch (err) {
@@ -116,7 +97,6 @@ export default function Container({ children, site }: ContainerProps) {
     };
 
     const getAvatarUrl = (u: DiscordUser) => {
-        // console.log(u.avatar)
         if (u.avatar) {
             return `https://cdn.discordapp.com/avatars/${u.id}/${u.avatar}.png?size=64`;
         }

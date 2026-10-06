@@ -152,15 +152,21 @@
   "formats": {
     "snowflake": {
       "type": "String",
-      "pattern": "^\\d{17,20}$"
+      "pattern": "^\\d{17,20}$",
+      "description": "ID de Discord (17 a 20 dígitos)",
+      "diagnosticCode": "INVALID_SNOWFLAKE"
     },
     "hex-color": {
       "type": "String",
-      "pattern": "^#[0-9A-Fa-f]{6}$"
+      "pattern": "^#[0-9A-Fa-f]{6}$",
+      "description": "Color #RRGGBB",
+      "diagnosticCode": "INVALID_COLOR"
     },
     "http-url": {
       "type": "String",
-      "protocols": ["http:", "https:"]
+      "protocols": ["http:", "https:"],
+      "description": "URL http:// o https://",
+      "diagnosticCode": "INVALID_URL"
     }
   },
   "aggregateConstraints": {
@@ -195,6 +201,28 @@
     "STRING_TOO_SHORT": "{target} es demasiado corto",
     "STRING_TOO_LONG": "{target} supera {maximum} caracteres",
     "EMPTY_EMBED": "{target} requiere al menos un atributo propio del embed",
-    "EMBED_TOO_LONG": "El contenido total del embed supera 6000 caracteres"
+    "EMBED_TOO_LONG": "El contenido total del embed supera 6000 caracteres",
+    "INVALID_CHARACTER": "El carácter {character} no es válido",
+    "UNTERMINATED_STRING": "El string no está cerrado",
+    "INVALID_ESCAPE_SEQUENCE": "La secuencia de escape {sequence} no es válida",
+    "INVALID_UNICODE_ESCAPE": "\\u requiere cuatro dígitos hexadecimales",
+    "TEMPLATE_STRING_NOT_SUPPORTED": "Los template strings no están disponibles; utilizá comillas y +",
+    "UNTERMINATED_BLOCK_COMMENT": "El comentario de bloque no está cerrado",
+    "INVALID_NUMBER": "{raw} no es un número válido",
+    "UNEXPECTED_TOKEN": "No se esperaba {token}",
+    "EXPECTED_TOKEN": "Se esperaba {expected}",
+    "UNSUPPORTED_CONSTRUCT": "{construct} no está disponible en este lenguaje",
+    "UNSUPPORTED_OPERATOR": "{operator} no está disponible. {hint}",
+    "INVALID_CALLEE": "Solo se pueden llamar funciones por su nombre",
+    "METHOD_CALL_NOT_SUPPORTED": "No se pueden llamar métodos; utilizá las funciones del lenguaje",
+    "QUOTED_OBJECT_KEY": "La propiedad {name} debe escribirse sin comillas",
+    "INVALID_ASSIGNMENT_TARGET": "Solo se puede asignar a una variable o a una propiedad",
+    "INCOMPATIBLE_OPERANDS": "{operator} no admite {operands}",
+    "INCOMPATIBLE_ASSIGNMENT": "No se puede asignar {actual} a un valor de tipo {expected}",
+    "VOID_VALUE": "{name} no devuelve un valor utilizable",
+    "INVALID_INDEX": "El índice debe ser Number y recibió {actual}",
+    "INVALID_COMPUTED_PROPERTY": "El acceso con corchetes a un objeto requiere un string fijo",
+    "COMMENTS_NOT_PRESERVED": "No se puede formatear sin mover o perder este comentario",
+    "FORMAT_UNSAFE": "No se pudo formatear sin cambiar el significado del código"
   }
 }

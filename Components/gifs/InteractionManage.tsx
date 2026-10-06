@@ -102,7 +102,6 @@ export default function InteractionManage({ newFlag, setNewFlag }: interactionMa
                                     <div className="flex flex-wrap gap-4 my-4">
                                         {
                                             g.gifs.map((gg, index) => {
-                                                // const isDefault = gg.url.includes("git");
                                                 return (
                                                     <div
                                                         key={gg.id || index}

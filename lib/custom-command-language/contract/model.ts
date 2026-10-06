@@ -82,9 +82,15 @@ export interface FunctionDefinition {
     examples: string[];
 }
 
+interface FormatBase {
+    name: string;
+    description: string;
+    diagnosticCode: string;
+}
+
 export type FormatDefinition =
-    | { name: string; kind: "pattern"; pattern: RegExp }
-    | { name: string; kind: "protocols"; protocols: string[] };
+    | (FormatBase & { kind: "pattern"; pattern: RegExp })
+    | (FormatBase & { kind: "protocols"; protocols: string[] });
 
 export interface AggregateConstraint {
     name: string;
@@ -121,7 +127,8 @@ export interface RulesModel {
     missingRequiredIsError: boolean;
     nullableRequiresNarrowing: boolean;
     unknownPropertyIsError: boolean;
-    narrowing: { enabled: boolean; consequent: boolean; alternate: boolean };
+    /** Patrones de `rules.nullNarrowing.supportedPatterns`, p. ej. "identifier !== null". */
+    narrowing: { enabled: boolean; patterns: Set<string>; consequent: boolean; alternate: boolean };
     operators: Map<string, OperatorRule>;
 }
 
@@ -140,6 +147,9 @@ export interface LexicalModel {
     operators: string[];
     unsupportedOperators: Map<string, string>;
     unsupportedLexemes: Map<string, string>;
+    /** Palabra de JavaScript → construcción de `syntax.unsupportedConstructs` que representa. */
+    unsupportedWords: Map<string, string>;
+    constructLabels: Map<string, string>;
     quotes: Set<string>;
     escapes: Map<string, string>;
     unicodeEscape: boolean;
@@ -210,6 +220,7 @@ export interface LanguageContract {
     typeByName: Map<string, Type>;
     functionByName: Map<string, FunctionDefinition>;
     functionCategories: Map<string, string>;
+    functionRequirements: Map<string, string>;
     formatByName: Map<string, FormatDefinition>;
     aggregateByName: Map<string, AggregateConstraint>;
     templates: Map<string, string>;

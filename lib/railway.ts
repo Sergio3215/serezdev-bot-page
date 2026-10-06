@@ -60,18 +60,3 @@ export async function restartBotDeployment(): Promise<RestartResult> {
         return { ok: false, status: 500, error: "Error interno al comunicarse con Railway" };
     }
 }
-
-let pendingRestart: Promise<RestartResult> | null = null;
-
-/**
- * Reinicia el bot después de `delayMs`. Los pedidos que llegan mientras hay uno pendiente en la
- * misma instancia se suman a ese reinicio en vez de encadenar otro.
- */
-export function scheduleBotRestart(delayMs: number): Promise<RestartResult> {
-    pendingRestart ??= new Promise((resolve) => setTimeout(resolve, delayMs))
-        .then(restartBotDeployment)
-        .finally(() => {
-            pendingRestart = null;
-        });
-    return pendingRestart;
-}

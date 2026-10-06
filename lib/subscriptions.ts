@@ -6,8 +6,8 @@ import type { PlanId, SubscriptionState, SubscriptionUpsert, SubscriptionView } 
  * Acceso a las suscripciones a través del backend del bot (Railway), igual que el
  * resto del panel (tarjetas, cumpleaños, gifs). El panel NO habla con MongoDB
  * directamente: le pega a `/api/v1/subscriptions` y el backend —que usa Prisma/Mongo—
- * persiste en su schema normalizado (Tier/Status/Provider/Payment). El bot lee esa
- * misma data para aplicar el plan.
+ * persiste en su schema normalizado (Tier/Status/Provider/Payment). El backend solo
+ * guarda y expone el estado; qué plan rige y sus límites se deciden acá.
  *
  * Contrato esperado del backend:
  *   GET  /api/v1/subscriptions?serverId=...
@@ -36,7 +36,6 @@ export async function getSubscription(serverId: string): Promise<SubscriptionSta
         headers: internalApiHeaders(),
     });
 
-    // Endpoint todavía no creado en el backend → tratamos como "sin suscripción".
     if (res.status === 404) return null;
     if (!res.ok) throw new Error(`El backend respondió ${res.status} al leer la suscripción.`);
 
@@ -70,7 +69,7 @@ export function inOneMonth(from: Date = new Date()): string {
 
 /**
  * Plan efectivo de un servidor: solo cuenta si el estado es "active" y, cuando hay
- * `currentPeriodEnd`, si no venció. Es la misma regla que tiene que aplicar el bot.
+ * `currentPeriodEnd`, si no venció. Sin `currentPeriodEnd` no vence.
  */
 export function resolveActivePlan(state: SubscriptionState | null): PlanId {
     if (!state || state.status !== "active") return "free";

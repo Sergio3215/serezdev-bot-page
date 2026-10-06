@@ -10,15 +10,9 @@ const KIND_LABELS: Record<string, { label: string; className: string }> = {
     action: { label: "Acción", className: "border-[#8c96ff]/30 bg-[#8c96ff]/10 text-[#aab1ff]" },
 };
 
-const FORMAT_LABELS: Record<string, string> = {
-    snowflake: "ID de Discord (17 a 20 dígitos)",
-    "hex-color": "Color #RRGGBB",
-    "http-url": "URL http:// o https://",
-};
-
-const REQUIREMENT_LABELS: Record<string, string> = {
-    mention: "El comando exige que el mensaje mencione al menos a un miembro.",
-};
+function formatLabel(name: string): string {
+    return contract.formatByName.get(name)?.description ?? name;
+}
 
 function TypeName({ type }: { type: Type }) {
     return <code className="rounded bg-white/5 px-1.5 py-0.5 font-mono text-[12px] text-[#82aaff]">{type.name}</code>;
@@ -29,7 +23,7 @@ function PropertyRules({ property }: { property: PropertyDefinition }) {
     if (property.minLength !== undefined || property.maxLength !== undefined) {
         rules.push(`${property.minLength ?? 0} a ${property.maxLength ?? "∞"} caracteres`);
     }
-    if (property.format) rules.push(FORMAT_LABELS[property.format] ?? property.format);
+    if (property.format) rules.push(formatLabel(property.format));
     if (property.readOnly) rules.push("Solo lectura");
     return <span className="text-zinc-400">{rules.join(" · ") || "—"}</span>;
 }
@@ -89,14 +83,14 @@ function FunctionCard({ definition }: { definition: FunctionDefinition }) {
                                 <span key={parameter.name}>
                                     {index > 0 && ", "}
                                     <span className="font-mono text-zinc-200">{parameter.name}</span> <TypeName type={parameter.type} />
-                                    {parameter.format && ` (${FORMAT_LABELS[parameter.format] ?? parameter.format})`}
+                                    {parameter.format && ` (${formatLabel(parameter.format)})`}
                                 </span>
                             ))}
                         </dd>
                     </div>
                 )}
                 {definition.requires.map((requirement) => (
-                    <div key={requirement} className="text-amber-300">{REQUIREMENT_LABELS[requirement] ?? requirement}</div>
+                    <div key={requirement} className="text-amber-300">{contract.functionRequirements.get(requirement) ?? requirement}</div>
                 ))}
             </dl>
             {definition.examples.map((example) => (

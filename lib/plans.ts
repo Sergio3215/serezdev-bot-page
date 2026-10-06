@@ -2,12 +2,11 @@ import type { BillingCycle, Currency, PaymentProvider, Plan, PlanId } from "@/ty
 import type { BackgroundType } from "@/lib/card/types";
 
 /**
- * Catálogo de planes. Es la única fuente de verdad de precios y features: la UI, el
- * checkout y (a futuro) el bot leen de acá. Los montos van en la unidad principal
- * de cada moneda (USD y ARS); Stripe cobra en centavos, así que el helper de abajo
- * multiplica ×100 cuando hace falta.
+ * Catálogo comercial de planes: precios, features y límites. Lo aplican la UI, el checkout
+ * y el BFF (proxy hacia el bot); bot-serezdev no lo conoce, solo persiste y expone el estado
+ * de la suscripción. Ver ARCHITECTURE.md.
  *
- * Ajustá los precios reales acá. Free no se cobra (price === null).
+ * Los montos van en la unidad principal de cada moneda (USD y ARS). Free no se cobra (price === null).
  */
 export const PLANS: Record<PlanId, Plan> = {
     free: {

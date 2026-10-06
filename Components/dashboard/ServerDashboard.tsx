@@ -75,8 +75,6 @@ export default function ServerDashboard({ filteredGuilds, loadingGuilds }: serve
         }
     };
 
-    // console.log(filteredGuilds);
-
     if (idServer && loadingGuilds && !filteredGuilds.some((guild) => guild.id === idServer)) {
         return (
             <div className="mt-24 flex flex-col items-center gap-4">

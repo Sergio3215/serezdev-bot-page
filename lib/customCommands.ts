@@ -21,7 +21,7 @@ export function cleanRoleIds(value: unknown): string[] {
     return [...new Set(ids)];
 }
 
-/** Los comandos anteriores al sprint no traen trigger ni roles: se representan como `include` y abiertos a todos. */
+/** Los comandos guardados sin trigger ni roles se representan como `include` y abiertos a todos. */
 export function normalizeCustomCommand(raw: Record<string, unknown>): CustomCommand {
     return {
         id: String(raw.id ?? ""),

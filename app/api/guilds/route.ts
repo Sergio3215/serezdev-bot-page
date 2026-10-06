@@ -60,7 +60,6 @@ export async function GET(request: NextRequest) {
     const userGuilds = userGuildsRes.guilds as DiscordGuild[];
 
     // 2. Filtrar donde el usuario es Administrador (permiso 0x8, 0x20 o es owner)
-    // ADMINISTRATOR bit is 0x8 (1 << 3), MANAGE_GUILD bit is 0x20 (1 << 5)
     const adminGuilds = userGuilds.filter((guild) => {
       if (guild.owner) return true;
       try {

@@ -1,63 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-// import { after } from "next/server";
 import { checkGuildAdmin } from "@/lib/guildAccess";
 import { BOT_API_BASE, internalApiHeaders } from "@/lib/internalApi";
 import { defaultGifUrl } from "@/lib/gifs";
 import { PLAN_LIMITS, PLANS } from "@/lib/plans";
-// import { scheduleBotRestart } from "@/lib/railway";
 import { getServerPlanView } from "@/lib/subscriptions";
+import { endpointKey, isAllowedEndpoint, isSnowflake, LIMITED_RESOURCES, limitCheckFor, type LimitedResource, type Method } from "@/lib/backendProxy";
 
-type Method = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 type Context = { params: Promise<{ server: string; path: string[] }> };
-
-/** Endpoints del backend que el panel puede usar. El resto (sync, suscripciones, borrados masivos) no se expone. */
-const ALLOWED_ENDPOINTS: Record<string, readonly Method[]> = {
-    "gif/getInteractions": ["GET"],
-    "gif/getInteractionByName": ["GET"],
-    "gif/addGif": ["POST"],
-    "gif/editGif": ["PUT"],
-    "gif/deleteGif": ["DELETE"],
-    "birthday/setup": ["GET", "PUT"],
-    "birthday/setup-card": ["GET", "POST", "PUT"],
-    "joinServer/setup": ["GET", "POST", "PUT"],
-    "joinServer/setup-card": ["GET", "POST", "PUT"],
-    "customCommand": ["GET", "POST"],
-    "customCommand/preview": ["POST"],
-    "customCommand/:id": ["PUT", "DELETE"],
-    "customCommand/:id/status": ["PATCH"],
-    "channelRule": ["GET", "POST"],
-    "channelRule/:id": ["PUT", "DELETE"],
-    "channelRule/:id/enabled": ["PATCH"],
-    "scheduledTask": ["GET", "POST"],
-    "scheduledTask/:id": ["PUT", "DELETE"],
-    "scheduledTask/:id/status": ["PATCH"],
-};
-
-// Desactivado: el bot recarga los comandos personalizados con un cron cada 10 segundos.
-// /** Cambios que el bot solo toma al reiniciarse. Aplica a todos los planes; el botón manual de reinicio sigue limitado. */
-// const RESTART_AFTER: Record<string, readonly Method[]> = {
-//     "customCommand/:id": ["PUT", "DELETE"],
-//     "customCommand/:id/status": ["PATCH"],
-// };
-//
-// const RESTART_DELAY_MS = 30_000;
-
-const OBJECT_ID_PATTERN = /^[a-f0-9]{24}$/;
-
-/** Convierte `customCommand/<objectId>/status` en la clave `customCommand/:id/status`. */
-function endpointKey(path: string[]): string {
-    return path.map((segment, index) => (index > 0 && OBJECT_ID_PATTERN.test(segment) ? ":id" : segment)).join("/");
-}
-
-const SNOWFLAKE_PATTERN = /^\d{17,20}$/;
-
-/** Recursos con límite por plan: endpoint del backend, límite en PLAN_LIMITS y textos. */
-const LIMITED_RESOURCES = {
-    customCommand: { limit: "customCommands", total: "comandos personalizados", active: "comandos activos", toggle: "status" },
-    channelRule: { limit: "channelRules", total: "reglas de canal", active: "reglas activas", toggle: "enabled" },
-} as const;
-
-type LimitedResource = keyof typeof LIMITED_RESOURCES;
 
 /**
  * Límite del plan. Crear cuenta el total; activar cuenta solo los activos, así un servidor que
@@ -94,18 +43,6 @@ async function planLimitError(
     }
 }
 
-/** Qué controla el límite del plan para este pedido: crear o activar un recurso limitado. */
-function limitCheckFor(method: Method, path: string[], body: string | undefined) {
-    const [resource, id, toggle] = path;
-    if (!(resource in LIMITED_RESOURCES)) return null;
-    const config = LIMITED_RESOURCES[resource as LimitedResource];
-    const enabling = JSON.parse(body ?? "{}").enabled === true;
-    if (method === "POST" && path.length === 1) return { resource: resource as LimitedResource, action: "create" as const };
-    if (method === "PATCH" && toggle === config.toggle && enabling) return { resource: resource as LimitedResource, action: "activate" as const, id };
-    if (method === "PUT" && path.length === 2 && enabling) return { resource: resource as LimitedResource, action: "activate" as const, id };
-    return null;
-}
-
 /**
  * Editar un GIF: tiene que pertenecer a la interacción indicada de este servidor. Los GIFs por
  * defecto solo se editan con Premium; volver a su URL original se permite en cualquier plan.
@@ -137,10 +74,10 @@ async function proxy(request: NextRequest, { params }: Context, method: Method) 
     const { server: serverId, path } = await params;
     const endpoint = path.join("/");
 
-    if (!ALLOWED_ENDPOINTS[endpointKey(path)]?.includes(method)) {
+    if (!isAllowedEndpoint(path, method)) {
         return NextResponse.json({ error: "Endpoint no disponible" }, { status: 404 });
     }
-    if (!SNOWFLAKE_PATTERN.test(serverId)) {
+    if (!isSnowflake(serverId)) {
         return NextResponse.json({ error: "Servidor inválido" }, { status: 400 });
     }
 
@@ -211,13 +148,6 @@ async function proxy(request: NextRequest, { params }: Context, method: Method) 
     }
 
     const responseHeaders: Record<string, string> = { "Content-Type": res.headers.get("content-type") ?? "application/json" };
-    // if (res.ok && RESTART_AFTER[endpointKey(path)]?.includes(method)) {
-    //     after(async () => {
-    //         const restart = await scheduleBotRestart(RESTART_DELAY_MS);
-    //         if (!restart.ok) console.error(`[backend proxy] ${method} ${endpoint}: no se pudo reiniciar el bot:`, restart.error);
-    //     });
-    //     responseHeaders["X-Bot-Restart"] = "scheduled";
-    // }
 
     return new NextResponse(await res.text(), { status: res.status, headers: responseHeaders });
 }

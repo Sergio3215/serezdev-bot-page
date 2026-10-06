@@ -9,6 +9,9 @@
     "query": "Obtiene un valor controlado para utilizar dentro del programa.",
     "action": "Representa una acción disponible en el lenguaje."
   },
+  "requirements": {
+    "mention": "El comando exige que el mensaje mencione al menos a un miembro."
+  },
   "functions": {
     "Channel": {
       "kind": "reference",

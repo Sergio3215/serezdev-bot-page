@@ -22,36 +22,6 @@ export interface ParseResult {
     diagnostics: Diagnostic[];
 }
 
-/** Palabras de JavaScript que el lenguaje no admite, con la construcción de `unsupportedConstructs` que representan. */
-const UNSUPPORTED_WORDS: Record<string, string> = {
-    var: "var",
-    function: "functionDeclaration",
-    return: "return",
-    async: "async",
-    await: "await",
-    class: "class",
-    new: "new",
-    this: "this",
-    import: "import",
-    export: "export",
-    require: "require",
-    try: "tryCatch",
-    catch: "tryCatch",
-    throw: "throw",
-    switch: "switch",
-    while: "while",
-    do: "doWhile",
-};
-
-const CONSTRUCT_LABELS: Record<string, string> = {
-    classicFor: "El for clásico",
-    forIn: "for...in",
-    destructuring: "La desestructuración",
-    spread: "El spread (...)",
-    optionalChaining: "El optional chaining (?.)",
-    arrowFunction: "La función flecha (=>)",
-};
-
 class SyntaxFailure extends Error {}
 
 const STATEMENT_START_KEYWORDS = ["let", "const", "if", "for", "break", "continue"];
@@ -152,12 +122,12 @@ class Parser {
     }
 
     private unsupported(token: Token, construct: string): never {
-        this.failAt(token, "UNSUPPORTED_CONSTRUCT", { construct: CONSTRUCT_LABELS[construct] ?? token.raw });
+        this.failAt(token, "UNSUPPORTED_CONSTRUCT", { construct: this.contract.lexical.constructLabels.get(construct) ?? token.raw });
     }
 
     private unsupportedWord(token: Token, expressionPosition: boolean): string | null {
         if (token.type !== IDENTIFIER) return null;
-        let construct = UNSUPPORTED_WORDS[String(token.value)];
+        let construct = this.contract.lexical.unsupportedWords.get(String(token.value));
         if (construct === "functionDeclaration" && expressionPosition) construct = "functionExpression";
         return construct && this.contract.grammar.unsupportedConstructs.has(construct) ? construct : null;
     }
@@ -353,7 +323,7 @@ class Parser {
             const after = this.current();
             if (after.type === OPERATOR && after.value === "=") {
                 this.failAt(after, this.statementContains(this.delimiter(";")) ? "UNSUPPORTED_CONSTRUCT" : "INVALID_FOR_OF_DECLARATION",
-                    { construct: CONSTRUCT_LABELS.classicFor });
+                    { construct: this.contract.lexical.constructLabels.get("classicFor") ?? "for" });
             }
             if (after.type === this.delimiter(",")) this.failAt(after, "INVALID_FOR_OF_DECLARATION");
             if (after.type === IDENTIFIER && after.value === "in") this.unsupported(after, "forIn");

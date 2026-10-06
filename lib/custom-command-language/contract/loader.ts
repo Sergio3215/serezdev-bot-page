@@ -1,4 +1,3 @@
-import { FRONTEND_TEMPLATES } from "../diagnostics";
 import type {
     AggregateConstraint,
     BindingRule,
@@ -57,19 +56,6 @@ const ESCAPE_VALUES: Record<string, string> = {
     "0": "\0",
 };
 
-const UNSUPPORTED_LEXEMES: Record<string, string> = {
-    "=>": "arrowFunction",
-    "...": "spread",
-    "?.": "optionalChaining",
-};
-
-/** Código de diagnóstico que emite cada formato conocido. */
-export const FORMAT_DIAGNOSTICS: Record<string, string> = {
-    snowflake: "INVALID_SNOWFLAKE",
-    "hex-color": "INVALID_COLOR",
-    "http-url": "INVALID_URL",
-};
-
 const STATEMENT_NAMES = [
     "BlockStatement",
     "VariableDeclaration",
@@ -107,15 +93,7 @@ const BINARY_GROUPS: Record<string, boolean> = {
     logicalOr: true,
 };
 
-/** Requisitos de ejecución que el frontend sabe comunicar. */
-const FUNCTION_REQUIREMENTS = ["mention"];
-
-const NARROWING_PATTERNS = [
-    "identifier !== null",
-    "identifier === null",
-    "null !== identifier",
-    "null === identifier",
-];
+const NARROWING_PATTERN = /^(identifier|null) (===|!==) (identifier|null)$/;
 
 function fail(path: string, message: string): never {
     throw new ContractError(`Contrato inválido en ${path}: ${message}`);
@@ -243,10 +221,24 @@ function loadLexical(syntax: JsonObject): LexicalModel {
     const operators = obj(syntax, "operators", "syntax");
     const supported = strArray(operators, "supported", "syntax.operators");
     const unsupportedOperators = new Map(Object.entries(strRecord(operators, "explicitlyUnsupported", "syntax.operators")));
-    const constructs = strArray(syntax, "unsupportedConstructs", "syntax");
+    const identifierPattern = new RegExp(`^${startPattern}${partPattern}*$`);
+    const unsupportedWords = new Map<string, string>();
     const unsupportedLexemes = new Map<string, string>();
-    for (const [lexeme, construct] of Object.entries(UNSUPPORTED_LEXEMES)) {
-        if (constructs.includes(construct)) unsupportedLexemes.set(lexeme, construct);
+    const constructLabels = new Map<string, string>();
+    for (const [construct, value] of Object.entries(obj(syntax, "unsupportedConstructs", "syntax"))) {
+        const constructPath = `syntax.unsupportedConstructs.${construct}`;
+        const definition = asObject(value, constructPath);
+        onlyKeys(definition, ["label", "keywords", "lexemes"], constructPath);
+        if (definition.label !== undefined) constructLabels.set(construct, str(definition, "label", constructPath));
+        for (const word of definition.keywords === undefined ? [] : strArray(definition, "keywords", constructPath)) {
+            if (!identifierPattern.test(word)) fail(`${constructPath}.keywords`, `no es un identificador: ${word}`);
+            if (unsupportedWords.has(word)) fail(`${constructPath}.keywords`, `${word} ya pertenece a ${unsupportedWords.get(word)}`);
+            unsupportedWords.set(word, construct);
+        }
+        for (const lexeme of definition.lexemes === undefined ? [] : strArray(definition, "lexemes", constructPath)) {
+            if (unsupportedLexemes.has(lexeme)) fail(`${constructPath}.lexemes`, `${lexeme} ya pertenece a ${unsupportedLexemes.get(lexeme)}`);
+            unsupportedLexemes.set(lexeme, construct);
+        }
     }
 
     return {
@@ -258,6 +250,8 @@ function loadLexical(syntax: JsonObject): LexicalModel {
         operators: [...new Set([...supported, ...unsupportedOperators.keys()])].sort((a, b) => b.length - a.length),
         unsupportedOperators,
         unsupportedLexemes,
+        unsupportedWords,
+        constructLabels,
         quotes: new Set(strArray(strings, "quotes", `${path}.strings`)),
         escapes,
         unicodeEscape,
@@ -269,7 +263,7 @@ function loadLexical(syntax: JsonObject): LexicalModel {
     };
 }
 
-function loadGrammar(syntax: JsonObject, lexical: LexicalModel): GrammarModel {
+function loadGrammar(syntax: JsonObject): GrammarModel {
     const program = obj(syntax, "program", "syntax");
     for (const separator of strArray(program, "statementSeparators", "syntax.program")) {
         oneOf(separator, ["newline", "semicolon", "rightBrace", "eof"], "syntax.program.statementSeparators");
@@ -395,7 +389,7 @@ function loadGrammar(syntax: JsonObject, lexical: LexicalModel): GrammarModel {
         unaryOperators,
         binaryLevels: binaryLevels.reverse(),
         assignmentOperators,
-        unsupportedConstructs: new Set([...strArray(syntax, "unsupportedConstructs", "syntax"), ...lexical.unsupportedLexemes.values()]),
+        unsupportedConstructs: new Set(Object.keys(obj(syntax, "unsupportedConstructs", "syntax"))),
     };
 }
 
@@ -404,13 +398,13 @@ function loadFormats(rules: JsonObject): Map<string, FormatDefinition> {
     for (const [name, value] of Object.entries(obj(rules, "formats", "rules"))) {
         const path = `rules.formats.${name}`;
         const format = asObject(value, path);
-        onlyKeys(format, ["type", "pattern", "protocols"], path);
+        onlyKeys(format, ["type", "pattern", "protocols", "description", "diagnosticCode"], path);
         expectValue(str(format, "type", path), "String", `${path}.type`);
-        if (!(name in FORMAT_DIAGNOSTICS)) fail(path, "formato sin diagnóstico en el frontend");
+        const common = { name, description: str(format, "description", path), diagnosticCode: str(format, "diagnosticCode", path) };
         if (typeof format.pattern === "string") {
-            formats.set(name, { name, kind: "pattern", pattern: new RegExp(format.pattern) });
+            formats.set(name, { ...common, kind: "pattern", pattern: new RegExp(format.pattern) });
         } else if (Array.isArray(format.protocols)) {
-            formats.set(name, { name, kind: "protocols", protocols: strArray(format, "protocols", path) });
+            formats.set(name, { ...common, kind: "protocols", protocols: strArray(format, "protocols", path) });
         } else {
             fail(path, "se esperaba pattern o protocols");
         }
@@ -513,8 +507,11 @@ function loadRules(rules: JsonObject, supportedOperators: Set<string>): RulesMod
     expectValue(memberAccess.methods, false, "rules.memberAccess.methods");
 
     const narrowing = obj(rules, "nullNarrowing", "rules");
+    const patterns = new Set<string>();
     for (const pattern of strArray(narrowing, "supportedPatterns", "rules.nullNarrowing")) {
-        oneOf(pattern, NARROWING_PATTERNS, "rules.nullNarrowing.supportedPatterns");
+        const match = NARROWING_PATTERN.exec(pattern);
+        if (!match || match[1] === match[3]) fail("rules.nullNarrowing.supportedPatterns", `patrón sin handler: ${pattern}`);
+        patterns.add(pattern);
     }
     const appliesTo = strArray(narrowing, "appliesTo", "rules.nullNarrowing");
     for (const place of appliesTo) oneOf(place, ["ifConsequent", "ifAlternate"], "rules.nullNarrowing.appliesTo");
@@ -563,6 +560,7 @@ function loadRules(rules: JsonObject, supportedOperators: Set<string>): RulesMod
         unknownPropertyIsError: oneOf(str(memberAccess, "unknownProperty", "rules.memberAccess"), ["error", "allowed"], "rules.memberAccess.unknownProperty") === "error",
         narrowing: {
             enabled: bool(narrowing, "enabled", "rules.nullNarrowing"),
+            patterns,
             consequent: appliesTo.includes("ifConsequent"),
             alternate: appliesTo.includes("ifAlternate"),
         },
@@ -739,10 +737,11 @@ function loadFunctions(
     functions: JsonObject,
     typeByName: Map<string, Type>,
     formats: Map<string, FormatDefinition>
-): { functionByName: Map<string, FunctionDefinition>; categories: Map<string, string> } {
-    onlyKeys(functions, ["schemaVersion", "languageVersion", "caseSensitive", "callSyntax", "userWritesAwait", "categories", "functions"], "functions");
+): { functionByName: Map<string, FunctionDefinition>; categories: Map<string, string>; requirements: Map<string, string> } {
+    onlyKeys(functions, ["schemaVersion", "languageVersion", "caseSensitive", "callSyntax", "userWritesAwait", "categories", "requirements", "functions"], "functions");
     expectValue(functions.userWritesAwait, false, "functions.userWritesAwait");
     const categories = new Map(Object.entries(strRecord(functions, "categories", "functions")));
+    const requirements = new Map(Object.entries(strRecord(functions, "requirements", "functions")));
     const functionByName = new Map<string, FunctionDefinition>();
 
     for (const [name, value] of Object.entries(obj(functions, "functions", "functions"))) {
@@ -810,12 +809,12 @@ function loadFunctions(
             ...(elementTypeOfParameter === undefined ? {} : { elementTypeOfParameter }),
             requires: definition.requires === undefined
                 ? []
-                : strArray(definition, "requires", path).map((requirement) => oneOf(requirement, FUNCTION_REQUIREMENTS, `${path}.requires`)),
+                : strArray(definition, "requires", path).map((requirement) => oneOf(requirement, [...requirements.keys()], `${path}.requires`)),
             signatures,
             examples: strArray(definition, "examples", path),
         });
     }
-    return { functionByName, categories };
+    return { functionByName, categories, requirements };
 }
 
 const SIGNATURE_PATTERN = /^([A-Za-z_$][\w$]*)\((.*)\): (.+)$/;
@@ -997,13 +996,13 @@ export function loadContract(bundle: ContractBundle): LanguageContract {
     }
 
     const lexical = loadLexical(contracts.syntax);
-    const grammar = loadGrammar(contracts.syntax, lexical);
+    const grammar = loadGrammar(contracts.syntax);
     const supportedOperators = new Set(strArray(obj(contracts.syntax, "operators", "syntax"), "supported", "syntax.operators"));
     const rules = loadRules(contracts.rules, supportedOperators);
     const formatByName = loadFormats(contracts.rules);
     const aggregateByName = loadAggregates(contracts.rules);
     const typeByName = loadTypes(contracts.types, formatByName, aggregateByName);
-    const { functionByName, categories } = loadFunctions(contracts.functions, typeByName, formatByName);
+    const { functionByName, categories, requirements } = loadFunctions(contracts.functions, typeByName, formatByName);
 
     for (const [name, rule] of rules.operators) {
         for (const typeName of [rule.acceptedOperand, rule.returns, ...Object.values(rule.returnsByPair ?? {})]) {
@@ -1026,15 +1025,12 @@ export function loadContract(bundle: ContractBundle): LanguageContract {
     }
     for (const op of grammar.assignmentOperators) if (!rules.operators.has(op)) fail(`rules.operators.${op}`, "falta la regla");
 
-    const templates = new Map<string, string>(Object.entries(FRONTEND_TEMPLATES));
-    for (const [code, template] of Object.entries(strRecord(contracts.rules, "diagnosticTemplates", "rules"))) {
-        templates.set(code, template);
-    }
+    const templates = new Map(Object.entries(strRecord(contracts.rules, "diagnosticTemplates", "rules")));
     for (const aggregate of aggregateByName.values()) {
         if (!templates.has(aggregate.diagnosticCode)) fail(`rules.aggregateConstraints.${aggregate.name}`, `falta la plantilla ${aggregate.diagnosticCode}`);
     }
-    for (const code of Object.values(FORMAT_DIAGNOSTICS)) {
-        if (!templates.has(code)) fail("rules.diagnosticTemplates", `falta la plantilla ${code}`);
+    for (const format of formatByName.values()) {
+        if (!templates.has(format.diagnosticCode)) fail(`rules.formats.${format.name}`, `falta la plantilla ${format.diagnosticCode}`);
     }
 
     return {
@@ -1049,6 +1045,7 @@ export function loadContract(bundle: ContractBundle): LanguageContract {
         typeByName,
         functionByName,
         functionCategories: categories,
+        functionRequirements: requirements,
         formatByName,
         aggregateByName,
         templates,

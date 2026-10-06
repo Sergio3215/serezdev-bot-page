@@ -1,4 +1,4 @@
-import { FORMAT_DIAGNOSTICS, nullableOf, unaryRuleName } from "../contract/loader";
+import { nullableOf, unaryRuleName } from "../contract/loader";
 import type {
     FunctionDefinition,
     LanguageContract,
@@ -210,7 +210,7 @@ class RuleEngine {
         }
     }
 
-    /** Narrowing de los patrones `x === null`, `x !== null` y sus inversos. */
+    /** Narrowing de los patrones de `rules.nullNarrowing.supportedPatterns`. */
     private narrowingFor(test: Expression): Narrowing | null {
         const narrowing = this.contract.rules.narrowing;
         if (!narrowing.enabled || test.type !== "BinaryExpression") return null;
@@ -218,6 +218,8 @@ class RuleEngine {
         const identifier = test.left.type === "Identifier" && test.right.type === "NullLiteral" ? test.left
             : test.right.type === "Identifier" && test.left.type === "NullLiteral" ? test.right : null;
         if (!identifier) return null;
+        const pattern = identifier === test.left ? `identifier ${test.operator} null` : `null ${test.operator} identifier`;
+        if (!narrowing.patterns.has(pattern)) return null;
         const resolved = this.scope.lookup(identifier.name);
         if (!resolved || !isNullable(resolved.type)) return null;
         const present = withoutNull(resolved.type);
@@ -426,7 +428,7 @@ class RuleEngine {
                 valid = false;
             }
         }
-        if (!valid) this.report(FORMAT_DIAGNOSTICS[formatName], loc, { target });
+        if (!valid) this.report(format.diagnosticCode, loc, { target });
     }
 
     private validateConfig(literal: LiteralObjectType, target: ObjectType, anchor: Expression, owner: string): void {
