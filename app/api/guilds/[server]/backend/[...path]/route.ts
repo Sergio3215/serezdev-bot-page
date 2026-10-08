@@ -4,7 +4,7 @@ import { BOT_API_BASE, internalApiHeaders } from "@/lib/internalApi";
 import { defaultGifUrl } from "@/lib/gifs";
 import { PLAN_LIMITS, PLANS } from "@/lib/plans";
 import { getServerPlanView } from "@/lib/subscriptions";
-import { endpointKey, isAllowedEndpoint, isSnowflake, LIMITED_RESOURCES, limitCheckFor, type LimitedResource, type Method } from "@/lib/backendProxy";
+import { endpointKey, forwardBody, forwardUrl, isAllowedEndpoint, isSnowflake, LIMITED_RESOURCES, limitCheckFor, ownershipCheckFor, type LimitedResource, type Method } from "@/lib/backendProxy";
 
 type Context = { params: Promise<{ server: string; path: string[] }> };
 
@@ -70,6 +70,22 @@ async function gifEditError(serverId: string, body: { id?: unknown; url?: unknow
     }
 }
 
+/** El id tiene que pertenecer a este servidor: el bot no lo verifica en sus operaciones por id. */
+async function ownershipError(serverId: string, resource: string, id: string): Promise<{ error: string; status: number } | null> {
+    try {
+        const url = new URL(`${BOT_API_BASE}/${resource}`);
+        url.searchParams.set("serverId", serverId);
+        const res = await fetch(url, { headers: internalApiHeaders(), cache: "no-store" });
+        if (!res.ok) throw new Error(`El backend respondió ${res.status}`);
+        const data: { data?: { id?: string }[] } = await res.json();
+        const items = Array.isArray(data.data) ? data.data : [];
+        return items.some((item) => item.id === id) ? null : { error: "No se encontró la configuración.", status: 404 };
+    } catch (err) {
+        console.error(`[backend proxy] no se pudo verificar ${resource}/${id}:`, err);
+        return { error: "No se pudo verificar la configuración.", status: 502 };
+    }
+}
+
 async function proxy(request: NextRequest, { params }: Context, method: Method) {
     const { server: serverId, path } = await params;
     const endpoint = path.join("/");
@@ -100,9 +116,7 @@ async function proxy(request: NextRequest, { params }: Context, method: Method) 
         );
     }
 
-    const url = new URL(`${BOT_API_BASE}/${endpoint}`);
-    request.nextUrl.searchParams.forEach((value, key) => url.searchParams.append(key, value));
-    url.searchParams.set("serverId", serverId);
+    const url = forwardUrl(BOT_API_BASE, path, request.nextUrl.searchParams, serverId);
 
     const headers = internalApiHeaders();
     let body: string | undefined;
@@ -120,7 +134,7 @@ async function proxy(request: NextRequest, { params }: Context, method: Method) 
         if (!json || typeof json !== "object" || Array.isArray(json)) {
             return NextResponse.json({ error: "Cuerpo inválido" }, { status: 400 });
         }
-        body = JSON.stringify({ ...json, serverId });
+        body = JSON.stringify(forwardBody(path, json as Record<string, unknown>, serverId));
         headers["Content-Type"] = "application/json";
     }
 
@@ -128,6 +142,11 @@ async function proxy(request: NextRequest, { params }: Context, method: Method) 
     if (method === "PUT" && endpointKey(path) === "gif/editGif") {
         const gifError = await gifEditError(serverId, JSON.parse(body ?? "{}"));
         if (gifError) return NextResponse.json({ error: gifError.error, message: gifError.error }, { status: gifError.status });
+    }
+    const ownership = ownershipCheckFor(path);
+    if (ownership) {
+        const ownershipFailure = await ownershipError(serverId, ownership.resource, ownership.id);
+        if (ownershipFailure) return NextResponse.json({ error: ownershipFailure.error, message: ownershipFailure.error }, { status: ownershipFailure.status });
     }
     if (limitCheck) {
         const limit = await planLimitError(serverId, limitCheck.resource, limitCheck.action, limitCheck.id);

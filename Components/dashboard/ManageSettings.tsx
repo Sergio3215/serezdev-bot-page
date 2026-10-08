@@ -15,6 +15,7 @@ const PricingPlans = dynamic(() => import("@/Components/billing/PricingPlans"), 
 const CustomCommandManager = dynamic(() => import("@/Components/customCommands/CustomCommandManager"), { loading: FeatureLoading });
 const ChannelRuleManager = dynamic(() => import("@/Components/channelRules/ChannelRuleManager"), { loading: FeatureLoading });
 const ScheduledTaskManager = dynamic(() => import("@/Components/scheduledTasks/ScheduledTaskManager"), { loading: FeatureLoading });
+const MessageCleanupManager = dynamic(() => import("@/Components/messageCleanup/MessageCleanupManager"), { loading: FeatureLoading });
 
 export default function ManageSetting({ title, state, setState, birthdaySetup }: ManageSettingType) {
     const [newFlag, setNewFlag] = useState<boolean>(false);
@@ -71,6 +72,16 @@ export default function ManageSetting({ title, state, setState, birthdaySetup }:
                 {
                     state === "scheduledTask" && (
                         <ScheduledTaskManager editing={newFlag} setEditing={setNewFlag} />
+                    )
+                }
+                {
+                    state === "autoCleanMessage" && (
+                        <MessageCleanupManager key="autoClean" kind="autoClean" editing={newFlag} setEditing={setNewFlag} />
+                    )
+                }
+                {
+                    state === "ghostMessage" && (
+                        <MessageCleanupManager key="ghost" kind="ghost" editing={newFlag} setEditing={setNewFlag} />
                     )
                 }
                 {

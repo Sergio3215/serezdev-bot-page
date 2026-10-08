@@ -21,7 +21,22 @@ const ALLOWED_ENDPOINTS: Record<string, readonly Method[]> = {
     "scheduledTask": ["GET", "POST"],
     "scheduledTask/:id": ["PUT", "DELETE"],
     "scheduledTask/:id/status": ["PATCH"],
+    "autoCleanMessage": ["GET", "POST"],
+    "autoCleanMessage/:id": ["PUT", "DELETE"],
+    "autoCleanMessage/:id/status": ["PATCH"],
+    "ghostMessage": ["GET", "POST"],
+    "ghostMessage/:id": ["PUT", "DELETE"],
+    "ghostMessage/:id/status": ["PATCH"],
 };
+
+/**
+ * Recursos cuyas operaciones por id el proxy solo reenvía si el id aparece en el listado de ESTE
+ * servidor: el bot no lo verifica en PUT/PATCH/DELETE.
+ */
+const OWNERSHIP_CHECKED_RESOURCES = ["autoCleanMessage", "ghostMessage"];
+
+/** Endpoints cuyo cuerpo el bot exige exacto (`{ enabled }`): el `serverId` va solo en la query. */
+const BODY_WITHOUT_SERVER_ID = new Set(["autoCleanMessage/:id/status", "ghostMessage/:id/status"]);
 
 const OBJECT_ID_PATTERN = /^[a-f0-9]{24}$/;
 
@@ -38,6 +53,28 @@ export function isAllowedEndpoint(path: string[], method: Method): boolean {
 
 export function isSnowflake(value: string): boolean {
     return SNOWFLAKE_PATTERN.test(value);
+}
+
+/** URL hacia el bot: conserva la query del cliente pero el `serverId` siempre es el de la ruta. */
+export function forwardUrl(base: string, path: string[], clientQuery: URLSearchParams, serverId: string): URL {
+    const url = new URL(`${base}/${path.join("/")}`);
+    clientQuery.forEach((value, key) => url.searchParams.append(key, value));
+    url.searchParams.set("serverId", serverId);
+    return url;
+}
+
+/** Cuerpo hacia el bot: el `serverId` que mande el cliente se descarta y se fija el de la ruta. */
+export function forwardBody(path: string[], json: Record<string, unknown>, serverId: string): Record<string, unknown> {
+    const rest = { ...json };
+    delete rest.serverId;
+    return BODY_WITHOUT_SERVER_ID.has(endpointKey(path)) ? rest : { ...rest, serverId };
+}
+
+/** Recurso e id a verificar antes de reenviar una operación por id, o null si no aplica. */
+export function ownershipCheckFor(path: string[]): { resource: string; id: string } | null {
+    const [resource, id] = path;
+    if (!OWNERSHIP_CHECKED_RESOURCES.includes(resource) || !id || !OBJECT_ID_PATTERN.test(id)) return null;
+    return { resource, id };
 }
 
 /** Recursos con límite por plan: endpoint del backend, límite en PLAN_LIMITS y textos. */
